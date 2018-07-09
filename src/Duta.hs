@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -5,8 +6,6 @@ module Duta
     ( start
     ) where
 
-import           Control.Concurrent
-import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import qualified Data.Attoparsec.ByteString.Char8 as Atto8
@@ -22,72 +21,43 @@ import qualified Data.Conduit.Attoparsec as CA
 import qualified Data.Conduit.ByteString.Builder as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as Net
-import qualified Data.Conduit.Network.TLS as TLS
 import           Data.Monoid
-import           Data.Typeable
 
 --------------------------------------------------------------------------------
 -- Constants
 
 start :: Int -> IO ()
 start port =
-  TLS.runTCPServerStartTLS
-    (TLS.tlsConfig "*" port certFile keyFile)
-    (\(appData, startTLS) -> do
+  Net.runTCPServer
+    (Net.serverSettings port "*")
+    (\appData -> do
        putStrLn "Got connection!"
-       ok <-
-         C.runConduit
-           (Net.appSource appData .|
-            CL.mapM (\x -> x <$ putStrLn ("<= " <> show x)) .|
-            insecureInteraction appData)
-       unless ok (putStrLn "no TLS")
-       when ok (startTLS secureInteraction)
-       threadDelay (1000 * 1000))
+       C.runConduit
+         (Net.appSource appData .|
+          CL.mapM (\x -> x <$ putStrLn ("<= " <> show x)) .|
+          interaction appData))
 
-insecureInteraction :: (MonadIO m, MonadThrow m) => Net.AppData -> C.ConduitT ByteString c m Bool
-insecureInteraction appData = do
+interaction :: (MonadIO m, MonadThrow m) => Net.AppData -> C.ConduitT ByteString c m ()
+interaction appData = do
   reply appData ServiceReady
   mgreet <- receive (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
   case mgreet of
-    Nothing -> pure False
+    Nothing -> pure ()
     Just {} -> do
       liftIO (putStrLn "Received HELO")
       reply appData (Okay " OK")
-      mstart <- receive (Atto8.string "STARTTLS")
-      case mstart of
-        Nothing -> do
-          liftIO (putStrLn "wtf")
-          pure False
-        Just {} -> do
-          reply appData ServiceReady
-          pure True
 
-secureInteraction :: Net.AppData -> IO ()
-secureInteraction appData = do
-  putStrLn "Starting TLS ..."
-  catch
-    (C.runConduit
-       (Net.appSource appData .| CL.mapM (\x -> x <$ putStrLn ("<= " <> show x)) .| do
-          mgreet <-
-            receive (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
-          case mgreet of
-            Nothing -> pure ()
-            Just {} -> do
-              liftIO (putStrLn "Received HELO")
-              reply appData (Okay " OK")
-              from <- receive (Atto8.string "MAIL FROM:")
-              reply appData (Okay " OK")
-              to <- receive (Atto8.string "RCPT TO:")
-              reply appData (Okay " OK")
-              _ <- receive (Atto8.string "DATA")
-              reply appData StartMailInput
-              data' <- consume dottedParser
-              reply appData (Okay " OK")
-              _ <- receive (Atto8.string "QUIT")
-              reply appData Closing
-              liftIO (print ("From", from, "to", to, "data", data'))))
-    (\(SomeException e) -> do
-       liftIO (putStrLn ("Server exception: " ++ show e ++ " :: " ++ show (typeOf e))))
+      from <- receive (Atto8.string "MAIL FROM:")
+      reply appData (Okay " OK")
+      to <- receive (Atto8.string "RCPT TO:")
+      reply appData (Okay " OK")
+      _ <- receive (Atto8.string "DATA")
+      reply appData StartMailInput
+      data' <- consume dottedParser
+      reply appData (Okay " OK")
+      _ <- receive (Atto8.string "QUIT")
+      reply appData Closing
+      liftIO (print ("From", from, "to", to, "data", data'))
 
 data FSM = Init | FirstR | FirstN | Dot | SecondR
 
@@ -166,12 +136,3 @@ buildReply =
     Closing -> L.intDec 221
     Okay str -> L.intDec 250 <> L.byteString str
     StartMailInput -> "354 Start mail input; end with <CRLF>.<CRLF>"
-
---------------------------------------------------------------------------------
--- Constants
-
-certFile :: FilePath
-certFile = "data/server.crt"
-
-keyFile :: FilePath
-keyFile = "data/server.key"

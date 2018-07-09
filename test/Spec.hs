@@ -18,7 +18,7 @@ spec = do
           "Run server"
           (withServer
              (HaskellNet.doSMTPPort
-                "chrisdone.com"
+                "127.0.0.1"
                 (fromIntegral testPort)
                 (HaskellNet.sendPlainTextMail
                    "chris@chrisdone.com"
