@@ -1,6 +1,8 @@
 module Main where
 
 import qualified Duta
+import           System.Environment
 
 main :: IO ()
-main = Duta.start 587
+main = do x:_ <- getArgs
+          Duta.start (read x)
