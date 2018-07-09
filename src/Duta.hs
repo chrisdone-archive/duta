@@ -121,7 +121,7 @@ reply :: MonadIO m => Net.AppData -> Reply -> m ()
 reply appData rep =
   liftIO
     (C.runConduit
-       (C.yield (buildReply rep <> "\n") .| CB.builderToByteString .|
+       (C.yield (buildReply rep <> "\r\n") .| CB.builderToByteString .|
         CL.mapM (\x -> x <$ S8.putStrLn ("=> " <> x)) .|
         Net.appSink appData))
 
