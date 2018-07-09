@@ -18,14 +18,16 @@ spec = do
           "Run server"
           (withServer
              (HaskellNet.doSMTPSTARTTLSWithSettings
-                "127.0.0.1"
+                "precision"
                 HaskellNet.defaultSettingsSMTPSTARTTLS
-                  {HaskellNet.sslPort = 5870}
-                (HaskellNet.sendPlainTextMail
-                   "receiver@server.com"
-                   "sender@server.com"
-                   "subject"
-                   "Hello! This is the mail body!"))))
+                  {HaskellNet.sslPort = 5870,HaskellNet.sslDisableCertificateValidation = True}
+                (\c -> do putStrLn "Connected to server..."
+                          HaskellNet.sendPlainTextMail
+                            "receiver@127.0.0.1"
+                            "sender@server.com"
+                            "subject"
+                            "Hello! This is the mail body!"
+                             c))))
 
 withServer :: IO a -> IO a
-withServer m = withAsync Duta.start (const (threadDelay (1000 * 1000) >> m))
+withServer m = withAsync Duta.start (const (threadDelay (1000 * 100) >> m))
