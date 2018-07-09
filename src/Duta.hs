@@ -26,8 +26,8 @@ import           Data.Monoid
 --------------------------------------------------------------------------------
 -- Constants
 
-start :: Int -> IO ()
-start port =
+start :: String -> Int -> IO ()
+start str port =
   Net.runTCPServer
     (Net.serverSettings port "*")
     (\appData -> do
@@ -35,18 +35,17 @@ start port =
        C.runConduit
          (Net.appSource appData .|
           CL.mapM (\x -> x <$ putStrLn ("<= " <> show x)) .|
-          interaction appData))
+          interaction str appData))
 
-interaction :: (MonadIO m, MonadThrow m) => Net.AppData -> C.ConduitT ByteString c m ()
-interaction appData = do
-  reply appData ServiceReady
+interaction :: (MonadIO m, MonadThrow m) => String -> Net.AppData -> C.ConduitT ByteString c m ()
+interaction str appData = do
+  reply appData (ServiceReady (S8.pack str))
   mgreet <- receive (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
   case mgreet of
     Nothing -> pure ()
     Just {} -> do
       liftIO (putStrLn "Received HELO")
       reply appData (Okay " OK")
-
       from <- receive (Atto8.string "MAIL FROM:")
       reply appData (Okay " OK")
       to <- receive (Atto8.string "RCPT TO:")
@@ -127,12 +126,12 @@ reply appData rep =
         Net.appSink appData))
 
 data Reply =
-  ServiceReady | Okay !ByteString | StartMailInput | Closing
+  ServiceReady !ByteString | Okay !ByteString | StartMailInput | Closing
 
 buildReply :: Reply -> L.Builder
 buildReply =
   \case
-    ServiceReady -> L.intDec 220
+    ServiceReady str -> L.intDec 220 <> L.byteString str
     Closing -> L.intDec 221
     Okay str -> L.intDec 250 <> L.byteString str
     StartMailInput -> "354 Start mail input; end with <CRLF>.<CRLF>"

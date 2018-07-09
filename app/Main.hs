@@ -4,5 +4,5 @@ import qualified Duta
 import           System.Environment
 
 main :: IO ()
-main = do x:_ <- getArgs
-          Duta.start (read x)
+main = do x:y:_ <- getArgs
+          Duta.start y (read x)
