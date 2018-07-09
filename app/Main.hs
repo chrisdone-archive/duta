@@ -3,4 +3,4 @@ module Main where
 import qualified Duta
 
 main :: IO ()
-main = Duta.start
+main = Duta.start 587

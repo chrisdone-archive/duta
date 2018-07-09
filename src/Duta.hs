@@ -29,10 +29,10 @@ import           Data.Typeable
 --------------------------------------------------------------------------------
 -- Constants
 
-start :: IO ()
-start =
+start :: Int -> IO ()
+start port =
   TLS.runTCPServerStartTLS
-    (TLS.tlsConfig "*" smtpPort certFile keyFile)
+    (TLS.tlsConfig "*" port certFile keyFile)
     (\(appData, startTLS) -> do
        putStrLn "Got connection!"
        ok <-
@@ -175,7 +175,3 @@ certFile = "data/server.crt"
 
 keyFile :: FilePath
 keyFile = "data/server.key"
-
--- | https://www.mailgun.com/blog/25-465-587-what-port-should-i-use
-smtpPort :: Int
-smtpPort = 587
