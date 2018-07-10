@@ -27,7 +27,10 @@ spec = do
                    "Hello! This is the mail body!"))))
 
 withServer :: IO a -> IO a
-withServer m = withAsync (Duta.start testPort) (const (threadDelay (1000 * 100) >> m))
+withServer m =
+  withAsync
+    (Duta.start " wibble" testPort)
+    (const (threadDelay (1000 * 100) >> m))
 
 testPort :: Int
 testPort = 5870

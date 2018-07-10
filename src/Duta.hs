@@ -22,20 +22,22 @@ import qualified Data.Conduit.ByteString.Builder as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as Net
 import           Data.Monoid
+import           System.IO
 
 --------------------------------------------------------------------------------
 -- Constants
 
 start :: String -> Int -> IO ()
 start str port =
-  Net.runTCPServer
-    (Net.serverSettings port "*")
-    (\appData -> do
-       putStrLn "Got connection!"
-       C.runConduit
-         (Net.appSource appData .|
-          CL.mapM (\x -> x <$ putStrLn ("<= " <> show x)) .|
-          interaction str appData))
+  do hSetBuffering stdout NoBuffering
+     Net.runTCPServer
+       (Net.serverSettings port "*")
+       (\appData -> do
+          S8.putStrLn "Got connection!"
+          C.runConduit
+            (Net.appSource appData .|
+             CL.mapM (\x -> x <$ S8.putStrLn (S8.pack ("<= " <> show x))) .|
+             interaction str appData))
 
 interaction :: (MonadIO m, MonadThrow m) => String -> Net.AppData -> C.ConduitT ByteString c m ()
 interaction str appData = do
@@ -44,7 +46,7 @@ interaction str appData = do
   case mgreet of
     Nothing -> pure ()
     Just {} -> do
-      liftIO (putStrLn "Received HELO")
+      liftIO (S8.putStrLn "Received HELO")
       reply appData (Okay " OK")
       from <- receive (Atto8.string "MAIL FROM:")
       reply appData (Okay " OK")
@@ -102,13 +104,23 @@ dottedParser = do
   where
     endingLength = S.length "\r\n.\r\n"
 
-receive :: (MonadThrow m) => Atto8.Parser b -> C.ConduitM ByteString c m (Maybe b)
-receive p =
-  fmap
-    (fmap snd)
-    (CA.conduitParser (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n') .|
+receive :: (MonadThrow m,MonadIO m) => Atto8.Parser b -> C.ConduitM ByteString c m (Maybe b)
+receive p = do
+  r <-
+    (CA.conduitParserEither (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n') .|
      C.await)
-
+  case r of
+    Nothing -> error "Client quit unexpectedly."
+    Just result ->
+      case result of
+        Left err -> do
+          bs <- C.await
+          Nothing <$
+            liftIO
+              (S8.putStrLn
+                 (S8.pack ("Failed to parse input: " <> show err <> "\nInput was: " <>
+                           show bs)))
+        Right (_pos, v) -> pure (Just v)
 
 consume :: MonadThrow m => Atto8.Parser b -> C.ConduitM ByteString c m (Maybe b)
 consume p =
@@ -132,6 +144,6 @@ buildReply :: Reply -> L.Builder
 buildReply =
   \case
     ServiceReady str -> L.intDec 220 <> L.byteString str
-    Closing -> L.intDec 221
+    Closing -> L.intDec 221 <> " OK"
     Okay str -> L.intDec 250 <> L.byteString str
     StartMailInput -> "354 Start mail input; end with <CRLF>.<CRLF>"
