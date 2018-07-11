@@ -7,7 +7,7 @@ import           Data.ByteString (ByteString)
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
-import qualified Duta
+import qualified Duta.Receiver as Duta
 import           Test.Hspec
 
 main :: IO ()

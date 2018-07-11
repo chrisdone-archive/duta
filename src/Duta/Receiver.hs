@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Duta
+module Duta.Receiver
     ( start
     , interaction
     , Reply (..)
@@ -93,7 +93,7 @@ interaction str reply = do
   receive_ "QUIT" (Atto8.string "QUIT")
   reply Closing
   logInfo
-    ("Message from " <> T.decodeUtf8 from <> ", to" <> T.decodeUtf8 to <>
+    ("Message from " <> T.decodeUtf8 from <> ", to " <> T.decodeUtf8 to <>
      ", data: " <>
      T.decodeUtf8 data')
 
