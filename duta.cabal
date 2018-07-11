@@ -25,7 +25,9 @@ library
                        monad-logger,
                        stringsearch,
                        transformers,
-                       mtl
+                       mtl,
+                       unliftio-core,
+                       text
   default-language:    Haskell2010
 
 executable duta
@@ -48,6 +50,7 @@ test-suite duta-test
                      , hspec
                      , async
                      , monad-logger
+                     , unliftio-core
                      , conduit
                      , bytestring
                      , conduit-extra

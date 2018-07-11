@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+module Main (main) where
+
+import           Control.Monad.Logger
 import           Data.ByteString (ByteString)
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
-import           Control.Concurrent
-import           Control.Concurrent.Async
 import qualified Duta
-import qualified Network.HaskellNet.SMTP as HaskellNet
 import           Test.Hspec
 
 main :: IO ()
@@ -17,61 +17,40 @@ spec :: Spec
 spec = do
   describe
     "Integration"
-    (do it "Run server" (withServer (pure ()))
-        it
-          "Run server"
-          (withServer
-             (HaskellNet.doSMTPPort
-                "127.0.0.1"
-                (fromIntegral testPort)
-                (HaskellNet.sendPlainTextMail
-                   "chris@chrisdone.com"
-                   "sender@server.com"
-                   "subject"
-                   "Hello! This is the mail body!")))
-        it
+    (do it
           "Regression test against gmail"
-          (withServer
-             (do xs <-
-                   C.runConduit $
+          (do xs <-
+                runNoLoggingT
+                  (C.runConduit $
                    CL.sourceList gmailInput .| Duta.interaction "" C.yield .|
-                   CL.consume
-                 shouldBe
-                   xs
-                   [ Duta.ServiceReady ""
-                   , Duta.Okay " OK"
-                   , Duta.Okay " OK"
-                   , Duta.Okay " OK"
-                   , Duta.StartMailInput
-                   , Duta.Okay " OK"
-                   , Duta.Closing
-                   ]))
+                   CL.consume)
+              shouldBe
+                xs
+                [ Duta.ServiceReady ""
+                , Duta.Okay " OK"
+                , Duta.Okay " OK"
+                , Duta.Okay " OK"
+                , Duta.StartMailInput
+                , Duta.Okay " OK"
+                , Duta.Closing
+                ])
         it
           "Regression test against postfix"
-          (withServer
-             (do xs <-
-                   C.runConduit $
-                   CL.sourceList postfixInput .| Duta.interaction "" C.yield .|
-                   CL.consume
-                 shouldBe
-                   xs
-                   [ Duta.ServiceReady ""
-                   , Duta.Okay " OK"
-                   , Duta.Okay " OK"
-                   , Duta.Okay " OK"
-                   , Duta.StartMailInput
-                   , Duta.Okay " OK"
-                   , Duta.Closing
-                   ])))
-
-withServer :: IO a -> IO a
-withServer m =
-  withAsync
-    (Duta.start " wibble" testPort)
-    (const (threadDelay (1000 * 100) >> m))
-
-testPort :: Int
-testPort = 5870
+          (do xs <-
+                runNoLoggingT $
+                C.runConduit $
+                CL.sourceList postfixInput .| Duta.interaction "" C.yield .|
+                CL.consume
+              shouldBe
+                xs
+                [ Duta.ServiceReady ""
+                , Duta.Okay " OK"
+                , Duta.Okay " OK"
+                , Duta.Okay " OK"
+                , Duta.StartMailInput
+                , Duta.Okay " OK"
+                , Duta.Closing
+                ]))
 
 gmailInput :: [ByteString]
 gmailInput =
@@ -90,4 +69,5 @@ postfixInput =
   , "RCPT TO:<blah@chrisdone.com>\r\n"
   , "DATA\r\n"
   , "Received: from solution.localdomain (unknown [79.112.116.6])\r\n\tby somemore.net (Postfix) with ESMTPSA id E796969A3235\r\n\tfor <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)\r\nReceived: from [127.0.0.1] (localhost.localdomain [127.0.0.1])\r\n\tby solution.localdomain (Postfix) with ESMTP id 0D482240326\r\n\tfor <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)\r\nTo: blah@chrisdone.com\r\nFrom: Mihai Bazon <mihai@bazon.net>\r\nSubject: test\r\nMessage-ID: <2c954fd9-7216-4ed5-f303-69b4e811821d@bazon.net>\r\nDate: Mon, 9 Jul 2018 20:47:59 +0300\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101\r\n Thunderbird/52.8.0\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8; format=flowed\r\nContent-Transfer-Encoding: 7bit\r\nContent-Language: en-US\r\n\r\nblah\r\n\r\n.\r\n"
+  , "QUIT\r\n"
   ]
