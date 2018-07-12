@@ -10,7 +10,10 @@ import           Data.ByteString (ByteString)
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
+import           Data.Time
 import qualified Duta.Receiver as Duta
+import           Network.Mail.Parse
+import           Network.Mail.Parse.Types
 import           System.Time
 import           Test.Hspec
 import qualified Text.Parsec as Parsec
@@ -68,7 +71,17 @@ spec = do
           "Postfix example"
           (shouldBe
              (Parsec.parse Rfc2822.message "" postfixMessage)
-             (Right postfixMessageParsed)))
+             (Right postfixMessageParsed))
+        it
+          "GMail example (emailparse)"
+          (shouldBe
+             (Network.Mail.Parse.parseMessage gmailMessage)
+             (Right gmailMessageParsed2))
+        it
+          "Postfix example (emailparse)"
+          (shouldBe
+             (Network.Mail.Parse.parseMessage postfixMessage)
+             (Right postfixMessageParsed2)))
 
 deriving instance Eq a => Eq (Rfc2822.GenericMessage a)
 deriving instance Eq Rfc2822.Field
@@ -325,3 +338,149 @@ postfixMessage =
   \0 (X11; Linux x86_64; rv:52.0) Gecko/20100101\r\n Thunderbird/52.8.0\r\nMIME-\
   \Version: 1.0\r\nContent-Type: text/plain; charset=utf-8; format=flowed\r\nCon\
   \tent-Transfer-Encoding: 7bit\r\nContent-Language: en-US\r\n\r\nblah\r\n\r\n.\r\n"
+
+gmailMessageParsed2 :: EmailMessage
+gmailMessageParsed2 =
+  EmailMessage
+    { emailHeaders =
+        [ Header
+            { headerName = "Received"
+            , headerContents =
+                "by mail-qk0-f170.google.com with SMTP id b66-v6so11206427qkj.1 for <wibble@chrisdone.com>; Tue, 10 Jul 2018 03:02:22 -0700 (PDT)"
+            }
+        , Header
+            { headerName = "DKIM-Signature"
+            , headerContents =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20161025; h=mime-version:references:in-reply-to:reply-to:from:date:message-id :subject:to; bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=; b=NL2PC7xTlI2ampgdRB9B6WzMj/bP+mOvlw/Rtd2+27EMSg5eRdJbs7LjSz8GJV22pl hF9C8DLTKRo9BrrE6qs27oPMCG0+/eXwOgBQsw/TR2yjvDT2oBnBRkfVjqakVBhmg2GT Ro+iGjDx8vC1136fI/7A3iXNJnjLHAIYcoMfHEljL7s4hqX8jHzQeWG6+W9jLLH08DFS IutcEUAnM1DKi8gPP69Qm6i8mEKfHwb8tals8RRthMUhu1w1Hey3djEB5SWpOhU+01BT fcGxYD10K5ED+T3FfX6CPC+4PMt/7va2ZD8XEfD2Hiogn1unuhjz++jArvq6jWxIxZmB eQrg=="
+            }
+        , Header
+            { headerName = "X-Google-DKIM-Signature"
+            , headerContents =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20161025; h=x-gm-message-state:mime-version:references:in-reply-to:reply-to :from:date:message-id:subject:to; bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=; b=soHCjg9EPG07DTHqu/JJyV4+HDqPVNFuLfE56qtggay+5RheihifZ26n/B6CRUSV0x 5C9IxFH1FSaPjkEugcW3wfE39zZyUqro+Ozj1IiB0Za0Srw55Iu5YaYyeEBkSY+VVpdY NlkNg0/m+gfGo7B05f6CjzqbPQ5iwmOx5kAwS4jKARef0K6Dv2HbeRHYqVCNt66sPGED zE6TFPxpbdkrDdSdytTevnu00e8IrqvC9rEft6r/nSrP2i0NpdUEuDa+LCFBWfGWwsuV hrVAtkCTfPOGgJpFCZ+b8uWWqovhnkfWrx0TE0uksW64YqdJXIH9VXGhnWRletjnz6+C AAyg=="
+            }
+        , Header
+            { headerName = "X-Gm-Message-State"
+            , headerContents =
+                "APt69E11MY8bREVIjYEX2S7HZECtZlfMQ8zqcH1I2F0mDl6fWrrR3grG yhZSXOzxXzHWHKhJEGAtSJyYMDBP063Jz9UTjhaiNQ=="
+            }
+        , Header
+            { headerName = "X-Google-Smtp-Source"
+            , headerContents =
+                "AAOMgpeSPyQt6gLoYRDkyjOpo2rN1aBvzv1SdKcmo5DCACWDqPLCUXyocBsaxfYTTsKYRkJp2O9D67xiJMxr5asnlF0="
+            }
+        , Header
+            { headerName = "X-Received"
+            , headerContents =
+                "by 2002:a37:1028:: with SMTP id a40-v6mr21175009qkh.257.1531216941632; Tue, 10 Jul 2018 03:02:21 -0700 (PDT)"
+            }
+        , Header {headerName = "MIME-Version", headerContents = "1.0"}
+        , References
+            [ "CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com"
+            ]
+        , InReplyTo
+            "CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com"
+        , ReplyTo
+            (EmailAddress
+               {emailAddress = "chrisdone@googlemail.com", emailLabel = Nothing})
+        , From
+            (EmailAddress
+               { emailAddress = "chrisdone@gmail.com"
+               , emailLabel = Just "Christopher Done"
+               })
+        , Date (ZonedTime (LocalTime (fromGregorian 2018 07 10)
+                                     (TimeOfDay 11 02 10))
+                          (hoursToTimeZone 1))
+        , MessageId
+            "CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com"
+        , Subject "Re: wibbling"
+        , To
+            [ EmailAddress
+                {emailAddress = "wibble@chrisdone.com", emailLabel = Nothing}
+            ]
+        , Header
+            { headerName = "Content-Type"
+            , headerContents =
+                "multipart/alternative; boundary=\"000000000000e1518b0570a23972\""
+            }
+        ]
+    , emailBodies =
+        [ MessageBody
+            (EmailMessage
+               { emailHeaders =
+                   [ Header
+                       { headerName = "Content-Type"
+                       , headerContents = "text/plain; charset=\"UTF-8\""
+                       }
+                   ]
+               , emailBodies =
+                   [ TextBody
+                       "we continue!\r\n\r\nOn Tue, 10 Jul 2018 at 10:36, Christopher Done <chrisdone@gmail.com> wrote:\r\n\r\n> hey wibble\r\n>\r\n\r\n"
+                   ]
+               })
+        , MessageBody
+            (EmailMessage
+               { emailHeaders =
+                   [ Header
+                       { headerName = "Content-Type"
+                       , headerContents = "text/html; charset=\"UTF-8\""
+                       }
+                   , Header
+                       { headerName = "Content-Transfer-Encoding"
+                       , headerContents = "quoted-printable"
+                       }
+                   ]
+               , emailBodies =
+                   [ TextBody
+                       "<div dir=\"ltr\">we continue!</div><br><div class=\"gmail_quote\"><div dir=\"ltr\">On Tue, 10 Jul 2018 at 10:36, Christopher Done &lt;<a href=\"mailto:chrisdone@gmail.com\">chrisdone@gmail.com</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex\"><div dir=\"ltr\">hey wibble</div>\r\n</blockquote></div>\r\n\r\n"
+                   ]
+               })
+        ]
+    }
+
+postfixMessageParsed2 :: EmailMessage
+postfixMessageParsed2 =
+  EmailMessage
+    { emailHeaders =
+        [ Header
+            { headerName = "Received"
+            , headerContents =
+                "from solution.localdomain (unknown [79.112.116.6]) by somemore.net (Postfix) with ESMTPSA id E796969A3235 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"
+            }
+        , Header
+            { headerName = "Received"
+            , headerContents =
+                "from [127.0.0.1] (localhost.localdomain [127.0.0.1]) by solution.localdomain (Postfix) with ESMTP id 0D482240326 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"
+            }
+        , To
+            [ EmailAddress
+                {emailAddress = "blah@chrisdone.com", emailLabel = Nothing}
+            ]
+        , From
+            (EmailAddress
+               { emailAddress = "mihai@bazon.net"
+               , emailLabel = Just "Mihai Bazon"
+               })
+        , Subject "test"
+        , MessageId "2c954fd9-7216-4ed5-f303-69b4e811821d@bazon.net"
+        , Date
+            ((ZonedTime
+                (LocalTime (fromGregorian 2018 07 09) (TimeOfDay 20 47 59))
+                (hoursToTimeZone 3)))
+        , Header
+            { headerName = "User-Agent"
+            , headerContents =
+                "Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Thunderbird/52.8.0"
+            }
+        , Header {headerName = "MIME-Version", headerContents = "1.0"}
+        , Header
+            { headerName = "Content-Type"
+            , headerContents = "text/plain; charset=utf-8; format=flowed"
+            }
+        , Header
+            { headerName = "Content-Transfer-Encoding"
+            , headerContents = "7bit"
+            }
+        , Header {headerName = "Content-Language", headerContents = "en-US"}
+        ]
+    , emailBodies = [TextBody "blah\r\n\r\n.\r\n"]
+    }

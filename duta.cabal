@@ -60,6 +60,8 @@ test-suite duta-test
                      , bytestring
                      , conduit-extra
                      , old-time
+                     , emailparse
+                     , time
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
