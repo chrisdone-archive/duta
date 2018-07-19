@@ -21,23 +21,29 @@ import qualified Text.Parsec.Rfc2822 as Rfc2822
 data BodyTree
   = BodyMultipart ![Either Parsec.ParseError BodyTree]
   | BodyPart !(Rfc2822.GenericMessage ByteString)
+  | Nul
   deriving (Eq, Show)
 
 deriving instance Eq a => Eq (Rfc2822.GenericMessage a)
 deriving instance Eq Rfc2822.Field
 
 -- | Given a content type and a body, produce a 'BodyTree'.
-parseMessageBodyTree :: Rfc2822.GenericMessage ByteString -> BodyTree
-parseMessageBodyTree msg@(Rfc2822.Message fields content) =
-  case extractMultipartBoundary fields of
-    Nothing -> BodyPart msg
-    Just boundary ->
-      BodyMultipart
-        (map
-           (fmap parseMessageBodyTree . Parsec.parse Rfc2822.message "message part")
-           (mapMaybe
-              (\s -> S8.stripPrefix "\r\n" s)
-              (Search.split ("--" <> boundary) content)))
+parseMessageBodyTree :: Rfc2822.GenericMessage ByteString -> Rfc2822.GenericMessage BodyTree
+parseMessageBodyTree msg0@(Rfc2822.Message fields0 _) =
+  case extractMultipartBoundary fields0 of
+    Nothing -> Rfc2822.Message fields0 (BodyPart msg0)
+    Just {} -> Rfc2822.Message fields0 (go msg0)
+  where
+    go msg@(Rfc2822.Message fields content) =
+      case extractMultipartBoundary fields of
+        Nothing -> BodyPart msg
+        Just boundary ->
+          BodyMultipart
+            (map
+               (fmap go . Parsec.parse Rfc2822.message "message part")
+               (mapMaybe
+                  (\s -> S8.stripPrefix "\r\n" s)
+                  (Search.split ("--" <> boundary) content)))
 
 -- | Extract a multipart boundary from a content type, if it's indeed multi-part.
 -- Example: @" multipart/alternative; boundary=\"000000000000e1518b0570a23972\""@
