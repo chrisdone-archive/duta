@@ -30,7 +30,10 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable
+import           Duta.MIME
 import           System.IO
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Rfc2822 as Rfc2822
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -95,7 +98,12 @@ interaction str reply = do
   logInfo
     ("Message from " <> T.decodeUtf8 from <> ", to " <> T.decodeUtf8 to <>
      ", data: " <>
-     T.decodeUtf8 data')
+     T.pack (show data'))
+  logInfo
+    ("Parsed message: " <>
+     T.pack
+       (show
+          (fmap parseMessageBodyTree (Parsec.parse Rfc2822.message "" data'))))
 
 receive_ :: (MonadThrow m,MonadLogger m) => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()

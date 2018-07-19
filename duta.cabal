@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     Duta.Receiver
+  exposed-modules:     Duta.Receiver, Duta.MIME
   build-depends:       base >= 4.7 && < 5,
                        conduit,
                        conduit-extra,
@@ -60,7 +60,6 @@ test-suite duta-test
                      , bytestring
                      , conduit-extra
                      , old-time
-                     , emailparse
                      , time
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
