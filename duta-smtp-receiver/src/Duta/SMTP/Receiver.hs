@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Duta.Receiver
+module Duta.SMTP.Receiver
     ( start
     , interaction
     , Reply (..)
@@ -30,7 +30,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable
-import           Duta.MIME
+import           Duta.SMTP.Receiver.MIME
 import           System.IO
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Rfc2822 as Rfc2822

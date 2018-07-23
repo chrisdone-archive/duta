@@ -6,7 +6,7 @@
 
 -- | Some support for MIME.
 
-module Duta.MIME where
+module Duta.SMTP.Receiver.MIME where
 
 import qualified Data.Attoparsec.ByteString.Char8 as Atto8
 import           Data.ByteString (ByteString)

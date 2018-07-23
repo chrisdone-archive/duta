@@ -10,8 +10,8 @@ import           Data.ByteString (ByteString)
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
-import           Duta.MIME
-import qualified Duta.Receiver as Duta
+import           Duta.SMTP.Receiver.MIME
+import qualified Duta.SMTP.Receiver as SMTPReceiver
 import           System.Time
 import           Test.Hspec
 import qualified Text.Parsec as Parsec
@@ -29,34 +29,34 @@ spec = do
           (do xs <-
                 runNoLoggingT
                   (C.runConduit $
-                   CL.sourceList gmailInput .| Duta.interaction "" C.yield .|
+                   CL.sourceList gmailInput .| SMTPReceiver.interaction "" C.yield .|
                    CL.consume)
               shouldBe
                 xs
-                [ Duta.ServiceReady ""
-                , Duta.Okay " OK"
-                , Duta.Okay " OK"
-                , Duta.Okay " OK"
-                , Duta.StartMailInput
-                , Duta.Okay " OK"
-                , Duta.Closing
+                [ SMTPReceiver.ServiceReady ""
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.StartMailInput
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Closing
                 ])
         it
           "Regression test against Postfix"
           (do xs <-
                 runNoLoggingT $
                 C.runConduit $
-                CL.sourceList postfixInput .| Duta.interaction "" C.yield .|
+                CL.sourceList postfixInput .| SMTPReceiver.interaction "" C.yield .|
                 CL.consume
               shouldBe
                 xs
-                [ Duta.ServiceReady ""
-                , Duta.Okay " OK"
-                , Duta.Okay " OK"
-                , Duta.Okay " OK"
-                , Duta.StartMailInput
-                , Duta.Okay " OK"
-                , Duta.Closing
+                [ SMTPReceiver.ServiceReady ""
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.StartMailInput
+                , SMTPReceiver.Okay " OK"
+                , SMTPReceiver.Closing
                 ]))
   describe
     "RFC 2822 Parser"
