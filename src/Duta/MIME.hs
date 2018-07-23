@@ -31,8 +31,8 @@ deriving instance Eq Rfc2822.Field
 parseMessageBodyTree :: Rfc2822.GenericMessage ByteString -> Rfc2822.GenericMessage BodyTree
 parseMessageBodyTree msg0@(Rfc2822.Message fields0 _) =
   case extractMultipartBoundary fields0 of
-    Nothing -> Rfc2822.Message fields0 (BodyPart msg0)
-    Just {} -> Rfc2822.Message fields0 (go msg0)
+    Nothing -> Rfc2822.Message fields0 (BodyPart (optionalOnly msg0))
+    Just {} -> Rfc2822.Message fields0 (go (optionalOnly msg0))
   where
     go msg@(Rfc2822.Message fields content) =
       case extractMultipartBoundary fields of
@@ -44,6 +44,14 @@ parseMessageBodyTree msg0@(Rfc2822.Message fields0 _) =
                (mapMaybe
                   (\s -> S8.stripPrefix "\r\n" s)
                   (Search.split ("--" <> boundary) content)))
+    optionalOnly (Rfc2822.Message fs m) =
+      Rfc2822.Message
+        (filter
+           (\case
+              Rfc2822.OptionalField {} -> True
+              _ -> False)
+           fs)
+        m
 
 -- | Extract a multipart boundary from a content type, if it's indeed multi-part.
 -- Example: @" multipart/alternative; boundary=\"000000000000e1518b0570a23972\""@

@@ -287,78 +287,7 @@ postfixMessageParsed =
      ]
      (BodyPart
         (Message
-           [ Received
-               ( [ ("from", "solution.localdomain")
-                 , ("by", "somemore.net")
-                 , ("with", "ESMTPSA")
-                 , ("id", "E796969A3235")
-                 , ("for", "blah@chrisdone.com")
-                 ]
-               , CalendarTime
-                   { ctYear = 2018
-                   , ctMonth = July
-                   , ctDay = 9
-                   , ctHour = 20
-                   , ctMin = 48
-                   , ctSec = 0
-                   , ctPicosec = 0
-                   , ctWDay = Monday
-                   , ctYDay = 0
-                   , ctTZName = ""
-                   , ctTZ = 10800
-                   , ctIsDST = False
-                   })
-           , Received
-               ( [ ("from", "[127.0.0.1]")
-                 , ("by", "solution.localdomain")
-                 , ("with", "ESMTP")
-                 , ("id", "0D482240326")
-                 , ("for", "blah@chrisdone.com")
-                 ]
-               , CalendarTime
-                   { ctYear = 2018
-                   , ctMonth = July
-                   , ctDay = 9
-                   , ctHour = 20
-                   , ctMin = 48
-                   , ctSec = 0
-                   , ctPicosec = 0
-                   , ctWDay = Monday
-                   , ctYDay = 0
-                   , ctTZName = ""
-                   , ctTZ = 10800
-                   , ctIsDST = False
-                   })
-           , To
-               [ NameAddr
-                   { nameAddr_name = Nothing
-                   , nameAddr_addr = "blah@chrisdone.com"
-                   }
-               ]
-           , From
-               [ NameAddr
-                   { nameAddr_name = Just "Mihai Bazon"
-                   , nameAddr_addr = "mihai@bazon.net"
-                   }
-               ]
-           , Subject " test"
-           , MessageID "<2c954fd9-7216-4ed5-f303-69b4e811821d@bazon.net>"
-           , Date
-               (CalendarTime
-                  { ctYear = 2018
-                  , ctMonth = July
-                  , ctDay = 9
-                  , ctHour = 20
-                  , ctMin = 47
-                  , ctSec = 59
-                  , ctPicosec = 0
-                  , ctWDay = Monday
-                  , ctYDay = 0
-                  , ctTZName = ""
-                  , ctTZ = 10800
-                  , ctIsDST = False
-                  })
-           , OptionalField
+           [ OptionalField
                "User-Agent"
                " Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101\r\n Thunderbird/52.8.0"
            , OptionalField "MIME-Version" " 1.0"
