@@ -1,4 +1,4 @@
-name:                duta-types
+name:                duta-model
 version:             0.0.0
 homepage:            https://github.com/chrisdone/duta#readme
 license:             BSD3
@@ -13,18 +13,17 @@ library
   hs-source-dirs:      src
   ghc-options:         -Wall
   exposed-modules:
-    Duta.Types.Mailbox
-    Duta.Types.EmailAddress
-    Duta.Types.MIME
+    Duta.Types.Model
+    Duta.Model
   build-depends:
     base >= 4.7 && < 5,
+    duta-types,
     persistent,
     persistent-template,
     text,
-    parsec,
-    hsemail,
     bytestring,
     time,
     email-validate,
-    attoparsec
+    attoparsec,
+    hsemail
   default-language:    Haskell2010

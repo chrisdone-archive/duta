@@ -1,10 +1,10 @@
 module Main where
 
-import           Control.Monad.Logger
-import qualified Duta.SMTP.Receiver as SMTPReceiver
+import           Control.Monad.Logger.CallStack
+import qualified Duta.SMTP.Receiver
 import           System.Environment
 
 main :: IO ()
 main = do
-  x:y:_ <- getArgs
-  runStdoutLoggingT (SMTPReceiver.start y (read x))
+  port:hostname:_ <- getArgs
+  runStdoutLoggingT (Duta.SMTP.Receiver.startWithDB (read port) hostname)

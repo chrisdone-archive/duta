@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -5,15 +6,22 @@
 
 module Main (main) where
 
+import           Control.Monad.IO.Class
 import           Control.Monad.Logger
+import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
+import           Data.Time
+import           Database.Persist.Sqlite
+import qualified Duta.SMTP.Receiver
 import           Duta.SMTP.Receiver.MIME
-import qualified Duta.SMTP.Receiver as SMTPReceiver
+import           Duta.Types.MIME
+import qualified Duta.Types.Model
 import           System.Time
 import           Test.Hspec
+import           Text.Email.Parser
 import qualified Text.Parsec as Parsec
 import           Text.Parsec.Rfc2822 as Rfc2822
 
@@ -24,40 +32,8 @@ spec :: Spec
 spec = do
   describe
     "Integration"
-    (do it
-          "Regression test against GMail"
-          (do xs <-
-                runNoLoggingT
-                  (C.runConduit $
-                   CL.sourceList gmailInput .| SMTPReceiver.interaction "" C.yield .|
-                   CL.consume)
-              shouldBe
-                xs
-                [ SMTPReceiver.ServiceReady ""
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.StartMailInput
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Closing
-                ])
-        it
-          "Regression test against Postfix"
-          (do xs <-
-                runNoLoggingT $
-                C.runConduit $
-                CL.sourceList postfixInput .| SMTPReceiver.interaction "" C.yield .|
-                CL.consume
-              shouldBe
-                xs
-                [ SMTPReceiver.ServiceReady ""
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.StartMailInput
-                , SMTPReceiver.Okay " OK"
-                , SMTPReceiver.Closing
-                ]))
+    (do integrationRegression
+        writingToDb)
   describe
     "RFC 2822 Parser"
     (do it
@@ -81,6 +57,105 @@ spec = do
                 parseMessageBodyTree
                 (Parsec.parse Rfc2822.message "" gmailAttachmentMessage))
              (Right gmailAttachmentParsed)))
+
+writingToDb :: Spec
+writingToDb =
+  describe
+    "Writing to DB"
+    (it
+       "GMail"
+       (do now <- liftIO getCurrentTime
+           let message' =
+                 Duta.Types.Model.Message
+                   { Duta.Types.Model.messageReceived = now
+                   , Duta.Types.Model.messageAuthored = now
+                   , Duta.Types.Model.messageFrom =
+                       unsafeEmailAddress "from" "example.com"
+                   , Duta.Types.Model.messageTo =
+                       unsafeEmailAddress "to" "example.com"
+                   , Duta.Types.Model.messageSubject = "Some subject"
+                   }
+           (replies, inserted) <-
+             runNoLoggingT
+               (withSqliteConnInfo
+                  (mkSqliteConnectionInfo ":memory:")
+                  (\(backend :: SqlBackend) -> do
+                     _ <- runReaderT (runMigration Duta.Types.Model.migrateAll) backend
+                     replies <-
+                       C.runConduit
+                         (CL.sourceList gmailInput .|
+                          Duta.SMTP.Receiver.interaction
+                            Duta.SMTP.Receiver.Config
+                              { Duta.SMTP.Receiver.configHostname = ""
+                              , Duta.SMTP.Receiver.configOnMsg =
+                                  \_msg -> do
+                                    _ <- runReaderT (insert message') backend
+                                    pure ()
+                              }
+                            C.yield .|
+                          CL.consume)
+                     inserted <- runReaderT (selectList [] []) backend
+                     pure (replies, inserted)))
+           shouldBe inserted [Entity (toSqlKey 1) message']
+           shouldBe
+             replies
+             [ Duta.SMTP.Receiver.ServiceReady ""
+             , Duta.SMTP.Receiver.Okay " OK"
+             , Duta.SMTP.Receiver.Okay " OK"
+             , Duta.SMTP.Receiver.Okay " OK"
+             , Duta.SMTP.Receiver.StartMailInput
+             , Duta.SMTP.Receiver.Okay " OK"
+             , Duta.SMTP.Receiver.Closing
+             ]))
+
+integrationRegression :: Spec
+integrationRegression = do
+  it
+    "Regression test against GMail"
+    (do xs <-
+          runNoLoggingT
+            (C.runConduit $
+             CL.sourceList gmailInput .|
+             Duta.SMTP.Receiver.interaction
+               Duta.SMTP.Receiver.Config
+                 { Duta.SMTP.Receiver.configHostname = ""
+                 , Duta.SMTP.Receiver.configOnMsg = const (pure ())
+                 }
+               C.yield .|
+             CL.consume)
+        shouldBe
+          xs
+          [ Duta.SMTP.Receiver.ServiceReady ""
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.StartMailInput
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Closing
+          ])
+  it
+    "Regression test against Postfix"
+    (do xs <-
+          runNoLoggingT $
+          C.runConduit $
+          CL.sourceList postfixInput .|
+          Duta.SMTP.Receiver.interaction
+            Duta.SMTP.Receiver.Config
+              { Duta.SMTP.Receiver.configHostname = ""
+              , Duta.SMTP.Receiver.configOnMsg = const (pure ())
+              }
+            C.yield .|
+          CL.consume
+        shouldBe
+          xs
+          [ Duta.SMTP.Receiver.ServiceReady ""
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.StartMailInput
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Closing
+          ])
 
 gmailInput :: [ByteString]
 gmailInput =

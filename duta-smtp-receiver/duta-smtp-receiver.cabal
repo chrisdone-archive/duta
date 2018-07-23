@@ -32,7 +32,11 @@ library
                        parsec,
                        hsemail,
                        text,
-                       old-time
+                       duta-types,
+                       duta-model,
+                       old-time,
+                       persistent,
+                       persistent-sqlite
   default-language:    Haskell2010
 
 executable duta-smtp-receiver
@@ -50,6 +54,7 @@ test-suite duta-smtp-receiver-test
   main-is:             Spec.hs
   build-depends:       base
                      , duta-smtp-receiver
+                     , duta-types
                      , HaskellNet
                      , HaskellNet-SSL
                      , hspec
@@ -63,6 +68,10 @@ test-suite duta-smtp-receiver-test
                      , conduit-extra
                      , old-time
                      , time
+                     , persistent-sqlite
+                     , email-validate
+                     , mtl
+                     , duta-model
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

@@ -14,18 +14,9 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Search as Search
 import           Data.Maybe
 import           Data.Monoid
+import           Duta.Types.MIME
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Rfc2822 as Rfc2822
-
--- | A tree representing the body of a message.
-data BodyTree
-  = BodyMultipart ![Either Parsec.ParseError BodyTree]
-  | BodyPart !(Rfc2822.GenericMessage ByteString)
-  | Nul
-  deriving (Eq, Show)
-
-deriving instance Eq a => Eq (Rfc2822.GenericMessage a)
-deriving instance Eq Rfc2822.Field
 
 -- | Given a content type and a body, produce a 'BodyTree'.
 parseMessageBodyTree :: Rfc2822.GenericMessage ByteString -> Rfc2822.GenericMessage BodyTree
