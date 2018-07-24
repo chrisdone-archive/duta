@@ -5,77 +5,69 @@
 
 module Duta.Model where
 
+import qualified Codec.MIME.Type as MIME
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as S
+import           Data.List
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Text (Text)
-import qualified Data.Text as T
 import           Data.Time
-import           Data.Time.Compat
 import           Data.Typeable
-import           Database.Persist.Sqlite
-import           Duta.Types.MIME
+import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Model
-import qualified Text.Parsec.Rfc2822 as Rfc2822
 
 data ModelError = MissingHeader Text
-  deriving ( Show, Typeable)
+  deriving (Show, Typeable)
 instance Exception ModelError
 
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => UTCTime
-  -> Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
-  -> ReaderT SqlBackend m ()
-insertModelMessage received (Rfc2822.Message fields bodyTree) = do
-  from <-
-    findHeader
-      "From"
-      (\case
-         Rfc2822.From from -> Just (T.intercalate ", " (map nameAddrText from))
-         _ -> Nothing)
-  to <-
-    findHeader
-      "To"
-      (\case
-         Rfc2822.To to -> Just (T.intercalate ", " (map nameAddrText to))
-         _ -> Nothing)
-  subject <-
-    findHeader
-      "Subject"
-      (\case
-         Rfc2822.Subject subject -> Just (T.pack subject)
-         _ -> Nothing)
-  date <-
-    findHeader
-      "Date"
-      (\case
-         Rfc2822.Date date -> Just date
-         _ -> Nothing)
-
+  -> MIME.MIMEValue
+  -> ReaderT Persistent.SqlBackend m ()
+insertModelMessage received value = do
+  from <- lookupHeader "from" value
+  to <- lookupHeader "to" value
+  subject <- lookupHeader "subject" value
   msgId <-
-    insert
+    Persistent.insert
       (Message
          { messageReceived = received
-         , messageAuthored = toUTCTime date
          , messageFrom = from
          , messageTo = to
          , messageSubject = subject
          })
-
+  insertContent msgId value
   pure ()
-  where
-    findHeader label pred =
-      case listToMaybe (mapMaybe pred fields) of
-        Just v -> pure v
-        Nothing -> do
-          logError ("Could not find header: " <> label)
-          throwM (MissingHeader label)
 
-nameAddrText :: Rfc2822.NameAddr -> Text
-nameAddrText (Rfc2822.NameAddr _mlocal domain) = T.pack domain
+-- | Insert a message part for a given message.
+insertContent ::
+     MonadIO m
+  => Key Message
+  -> MIME.MIMEValue
+  -> ReaderT Persistent.SqlBackend m ()
+insertContent msgId value =
+  case (MIME.mime_val_content value) of
+    MIME.Multi values -> mapM_ (insertContent msgId) values
+    MIME.Single text ->
+      case MIME.mimeType (MIME.mime_val_type value) of
+        MIME.Text "plain" -> void (Persistent.insert (PlainTextPart msgId text))
+        MIME.Text "html" -> void (Persistent.insert (HtmlPart msgId text))
+        _ ->
+          void
+            (Persistent.insert
+               (BinaryPart
+                  msgId
+                  (MIME.showType (MIME.mime_val_type value))
+                  (fromMaybe
+                     "7BIT"
+                     (lookupHeader "content-transfer-encoding" value))
+                  text))
+
+lookupHeader :: MonadThrow f => Text -> MIME.MIMEValue -> f Text
+lookupHeader label value =
+  case find (\(MIME.MIMEParam k _) -> k == label) (MIME.mime_val_headers value) of
+    Just (MIME.MIMEParam _ v) -> pure v
+    Nothing -> throwM (MissingHeader label)

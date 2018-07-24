@@ -3,3 +3,5 @@ packages:
 - duta-smtp-receiver
 - duta-types
 - duta-model
+extra-deps:
+- mime-0.4.0.2

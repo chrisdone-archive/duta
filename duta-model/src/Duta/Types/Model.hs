@@ -18,7 +18,6 @@ import Duta.Types.EmailAddress
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Message
     received UTCTime
-    authored UTCTime
     from Text
     to Text
     subject Text
@@ -33,7 +32,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 
   HtmlPart
     message MessageId
-    content ByteString
+    content Text
     deriving Show
     deriving Eq
 
@@ -41,6 +40,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     message MessageId
     contentType Text
     transferEncoding Text
+    content Text
     deriving Show
     deriving Eq
 

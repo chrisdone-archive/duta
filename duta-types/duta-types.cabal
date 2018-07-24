@@ -15,14 +15,12 @@ library
   exposed-modules:
     Duta.Types.Mailbox
     Duta.Types.EmailAddress
-    Duta.Types.MIME
   build-depends:
     base >= 4.7 && < 5,
     persistent,
     persistent-template,
     text,
     parsec,
-    hsemail,
     bytestring,
     time,
     email-validate,

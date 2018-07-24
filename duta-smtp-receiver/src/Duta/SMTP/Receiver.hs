@@ -11,12 +11,14 @@ module Duta.SMTP.Receiver
     , Reply (..)
     ) where
 
+import           Codec.MIME.Parse
+import           Codec.MIME.Type
 import           Control.Exception
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
+import           Control.Monad.IO.Unlift
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
-import           Control.Monad.IO.Unlift
 import qualified Data.Attoparsec.ByteString.Char8 as Atto8
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
@@ -36,11 +38,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
-import           Duta.SMTP.Receiver.MIME
-import           Duta.Types.MIME
 import           System.IO
-import qualified Text.Parsec as Parsec
-import qualified Text.Parsec.Rfc2822 as Rfc2822
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -54,7 +52,7 @@ instance Exception DutaException
 data Start m = Start
   { startHostname :: String
   , startPort :: Int
-  , startOnMessage :: Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString)) -> m ()
+  , startOnMessage :: MIMEValue -> m ()
   , startPool :: Pool SqlBackend
   }
 
@@ -104,7 +102,7 @@ makeReply appData rep =
 
 data Interaction c m = Interaction
   { interactionHostname :: String
-  , interactionOnMessage :: Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString)) -> m ()
+  , interactionOnMessage :: MIMEValue -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
   }
 
@@ -130,9 +128,7 @@ interaction Interaction {..} = do
     ("Message from " <> T.decodeUtf8 from <> ", to " <> T.decodeUtf8 to <>
      ", data: " <>
      T.pack (show data'))
-  case Parsec.parse Rfc2822.message "" data' of
-    Left e -> logError ("Failed to parse input: " <> T.pack (show e))
-    Right msg -> lift (interactionOnMessage (parseMessageBodyTree msg))
+  lift (interactionOnMessage (parseMIMEMessage (T.decodeUtf8 data')))
 
 receive_ :: (MonadThrow m,MonadLogger m) => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()
