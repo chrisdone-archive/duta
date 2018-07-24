@@ -6,7 +6,6 @@
 
 module Main (main) where
 
-import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
@@ -15,13 +14,13 @@ import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import           Data.Time
 import           Database.Persist.Sqlite
+import           Duta.Model
 import qualified Duta.SMTP.Receiver
 import           Duta.SMTP.Receiver.MIME
 import           Duta.Types.MIME
 import qualified Duta.Types.Model
 import           System.Time
 import           Test.Hspec
-import           Text.Email.Parser
 import qualified Text.Parsec as Parsec
 import           Text.Parsec.Rfc2822 as Rfc2822
 
@@ -64,23 +63,26 @@ writingToDb =
     "Writing to DB"
     (it
        "GMail"
-       (do now <- liftIO getCurrentTime
+       (do now <- getCurrentTime
            let message' =
                  Duta.Types.Model.Message
                    { Duta.Types.Model.messageReceived = now
-                   , Duta.Types.Model.messageAuthored = now
+                   , Duta.Types.Model.messageAuthored =
+                       read "2018-07-10 11:02:10 UTC"
                    , Duta.Types.Model.messageFrom =
-                       unsafeEmailAddress "from" "example.com"
-                   , Duta.Types.Model.messageTo =
-                       unsafeEmailAddress "to" "example.com"
-                   , Duta.Types.Model.messageSubject = "Some subject"
+                       "chrisdone@gmail.com"
+                   , Duta.Types.Model.messageTo = "wibble@chrisdone.com"
+                   , Duta.Types.Model.messageSubject = " Re: wibbling"
                    }
            (replies, inserted) <-
              runNoLoggingT
                (withSqliteConnInfo
                   (mkSqliteConnectionInfo ":memory:")
                   (\(backend :: SqlBackend) -> do
-                     _ <- runReaderT (runMigration Duta.Types.Model.migrateAll) backend
+                     _ <-
+                       runReaderT
+                         (runMigration Duta.Types.Model.migrateAll)
+                         backend
                      replies <-
                        C.runConduit
                          (CL.sourceList gmailInput .|
@@ -88,9 +90,10 @@ writingToDb =
                             Duta.SMTP.Receiver.Config
                               { Duta.SMTP.Receiver.configHostname = ""
                               , Duta.SMTP.Receiver.configOnMsg =
-                                  \_msg -> do
-                                    _ <- runReaderT (insert message') backend
-                                    pure ()
+                                  \msg ->
+                                    runReaderT
+                                      (insertModelMessage now msg)
+                                      backend
                               }
                             C.yield .|
                           CL.consume)

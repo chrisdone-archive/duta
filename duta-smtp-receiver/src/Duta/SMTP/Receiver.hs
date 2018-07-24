@@ -32,10 +32,12 @@ import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import           Data.Time
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
 import           Database.Persist.Sqlite
 import           Duta.Model
+import           Duta.Types.Model
 import           Duta.SMTP.Receiver.MIME
 import           Duta.Types.MIME
 import           System.IO
@@ -57,12 +59,16 @@ data Config m = Config
   }
 
 startWithDB :: Int -> String -> LoggingT IO ()
-startWithDB port hostname =
+startWithDB port hostname = do
+  _ <- withSqliteConnInfo (mkSqliteConnectionInfo "duta.db") (runReaderT (runMigration migrateAll))
   start
     port
     (Config
        { configHostname = hostname
-       , configOnMsg = insertModelMessage
+       , configOnMsg =
+           \msg -> do
+             now <- liftIO getCurrentTime
+             insertModelMessage now msg
        })
 
 start :: Int -> Config (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
@@ -78,7 +84,7 @@ start port config = do
                     ("Got connection from " <>
                      T.pack (show (Net.appSockAddr appData)))
                   withSqliteConnInfo
-                    (mkSqliteConnectionInfo ":memory:")
+                    (mkSqliteConnectionInfo "duta.db")
                     (runReaderT
                        (C.runConduit
                           (Net.appSource appData .|

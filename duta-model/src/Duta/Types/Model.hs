@@ -19,8 +19,8 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Message
     received UTCTime
     authored UTCTime
-    from EmailAddress
-    to EmailAddress
+    from Text
+    to Text
     subject Text
     deriving Show
     deriving Eq

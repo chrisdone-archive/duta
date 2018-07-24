@@ -34,6 +34,7 @@ library
                        text,
                        duta-types,
                        duta-model,
+                       time,
                        old-time,
                        persistent,
                        persistent-sqlite
