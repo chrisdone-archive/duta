@@ -11,8 +11,8 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Data.List
-import           Data.Maybe
 import           Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
 import qualified Database.Persist.Sqlite as Persistent
@@ -61,10 +61,7 @@ insertContent msgId value =
                (BinaryPart
                   msgId
                   (MIME.showType (MIME.mime_val_type value))
-                  (fromMaybe
-                     "7BIT"
-                     (lookupHeader "content-transfer-encoding" value))
-                  text))
+                  (T.encodeUtf8 text)))
 
 lookupHeader :: MonadThrow f => Text -> MIME.MIMEValue -> f Text
 lookupHeader label value =

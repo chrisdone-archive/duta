@@ -39,7 +39,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   BinaryPart
     message MessageId
     contentType Text
-    content Text
+    content ByteString
     deriving Show
     deriving Eq
 
