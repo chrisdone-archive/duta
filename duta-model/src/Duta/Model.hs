@@ -9,6 +9,8 @@ import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as S
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Text (Text)
@@ -19,7 +21,6 @@ import           Data.Typeable
 import           Database.Persist.Sqlite
 import           Duta.Types.MIME
 import           Duta.Types.Model
-import           System.Time (CalendarTime)
 import qualified Text.Parsec.Rfc2822 as Rfc2822
 
 data ModelError = MissingHeader Text
@@ -29,7 +30,7 @@ instance Exception ModelError
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => UTCTime
-  -> Rfc2822.GenericMessage BodyTree
+  -> Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
   -> ReaderT SqlBackend m ()
 insertModelMessage received (Rfc2822.Message fields bodyTree) = do
   from <-
@@ -57,7 +58,7 @@ insertModelMessage received (Rfc2822.Message fields bodyTree) = do
          Rfc2822.Date date -> Just date
          _ -> Nothing)
 
-  _msgId <-
+  msgId <-
     insert
       (Message
          { messageReceived = received
@@ -66,6 +67,7 @@ insertModelMessage received (Rfc2822.Message fields bodyTree) = do
          , messageTo = to
          , messageSubject = subject
          })
+
   pure ()
   where
     findHeader label pred =

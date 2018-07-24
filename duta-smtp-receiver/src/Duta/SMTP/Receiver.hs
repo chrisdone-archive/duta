@@ -54,7 +54,7 @@ instance Exception DutaException
 data Start m = Start
   { startHostname :: String
   , startPort :: Int
-  , startOnMessage :: Rfc2822.GenericMessage BodyTree -> m ()
+  , startOnMessage :: Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString)) -> m ()
   , startPool :: Pool SqlBackend
   }
 
@@ -104,7 +104,7 @@ makeReply appData rep =
 
 data Interaction c m = Interaction
   { interactionHostname :: String
-  , interactionOnMessage :: Rfc2822.GenericMessage BodyTree -> m ()
+  , interactionOnMessage :: Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString)) -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
   }
 

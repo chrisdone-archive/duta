@@ -174,7 +174,7 @@ postfixInput =
   , "QUIT\r\n"
   ]
 
-gmailMessageParsed :: GenericMessage BodyTree
+gmailMessageParsed :: GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
 gmailMessageParsed =
   (Message
      [ Received
@@ -277,7 +277,7 @@ gmailMessageParsed =
                   "<div dir=3D\"ltr\">we continue!</div><br><div class=3D\"gmail_quote\"><div dir=\r\n=3D\"ltr\">On Tue, 10 Jul 2018 at 10:36, Christopher Done &lt;<a href=3D\"mail=\r\nto:chrisdone@gmail.com\">chrisdone@gmail.com</a>&gt; wrote:<br></div><blockq=\r\nuote class=3D\"gmail_quote\" style=3D\"margin:0 0 0 .8ex;border-left:1px #ccc =\r\nsolid;padding-left:1ex\"><div dir=3D\"ltr\">hey wibble</div>\r\n</blockquote></div>\r\n\r\n"))
         ]))
 
-postfixMessageParsed :: GenericMessage BodyTree
+postfixMessageParsed :: GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
 postfixMessageParsed =
   (Message
      [ Received
@@ -371,7 +371,7 @@ postfixMessageParsed =
            ]
            "blah\r\n\r\n.\r\n")))
 
-gmailAttachmentParsed :: GenericMessage BodyTree
+gmailAttachmentParsed :: GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
 gmailAttachmentParsed =
   Message
     [ Received

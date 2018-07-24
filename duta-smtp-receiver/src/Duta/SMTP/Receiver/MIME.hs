@@ -19,7 +19,9 @@ import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Rfc2822 as Rfc2822
 
 -- | Given a content type and a body, produce a 'BodyTree'.
-parseMessageBodyTree :: Rfc2822.GenericMessage ByteString -> Rfc2822.GenericMessage BodyTree
+parseMessageBodyTree ::
+     Rfc2822.GenericMessage ByteString
+  -> Rfc2822.GenericMessage (BodyTree (Rfc2822.GenericMessage ByteString))
 parseMessageBodyTree msg0@(Rfc2822.Message fields0 _) =
   case extractMultipartBoundary fields0 of
     Nothing -> Rfc2822.Message fields0 (BodyPart (optionalOnly msg0))
