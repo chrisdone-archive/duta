@@ -50,6 +50,11 @@ spec = do
                        T.pack (formatOutput 76 Nothing (encodeRaw True image))
                   in S8.pack (T.unpack s))
                 (S.pack image))
+           -- The mime package is a bit out of a date and uses String
+           -- and Text where a ByteString would be more
+           -- appropriate. Due to many conversions, it's not clear
+           -- that this will always be correct. Hence, we have a
+           -- property test for the roundtrip encode.decode==id.
            it
              "Codec.MIME.Base64: quickcheck roundtrip"
              (property
