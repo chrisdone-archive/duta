@@ -69,8 +69,7 @@ writingToDb =
                    { Duta.Types.Model.messageReceived = now
                    , Duta.Types.Model.messageAuthored =
                        read "2018-07-10 11:02:10 UTC"
-                   , Duta.Types.Model.messageFrom =
-                       "chrisdone@gmail.com"
+                   , Duta.Types.Model.messageFrom = "chrisdone@gmail.com"
                    , Duta.Types.Model.messageTo = "wibble@chrisdone.com"
                    , Duta.Types.Model.messageSubject = " Re: wibbling"
                    }
@@ -78,27 +77,22 @@ writingToDb =
              runNoLoggingT
                (withSqliteConnInfo
                   (mkSqliteConnectionInfo ":memory:")
-                  (\(backend :: SqlBackend) -> do
-                     _ <-
-                       runReaderT
-                         (runMigration Duta.Types.Model.migrateAll)
-                         backend
-                     replies <-
-                       C.runConduit
-                         (CL.sourceList gmailInput .|
-                          Duta.SMTP.Receiver.interaction
-                            Duta.SMTP.Receiver.Config
-                              { Duta.SMTP.Receiver.configHostname = ""
-                              , Duta.SMTP.Receiver.configOnMsg =
-                                  \msg ->
-                                    runReaderT
-                                      (insertModelMessage now msg)
-                                      backend
-                              }
-                            C.yield .|
-                          CL.consume)
-                     inserted <- runReaderT (selectList [] []) backend
-                     pure (replies, inserted)))
+                  (runReaderT
+                     (do _ <- runMigration Duta.Types.Model.migrateAll
+                         replies <-
+                           C.runConduit
+                             (CL.sourceList gmailInput .|
+                              Duta.SMTP.Receiver.interaction
+                                Duta.SMTP.Receiver.Interaction
+                                  { Duta.SMTP.Receiver.interactionHostname = ""
+                                  , Duta.SMTP.Receiver.interactionOnMessage =
+                                      insertModelMessage now
+                                  , Duta.SMTP.Receiver.interactionReply =
+                                      C.yield
+                                  } .|
+                              CL.consume)
+                         inserted <- selectList [] []
+                         pure (replies, inserted))))
            shouldBe inserted [Entity (toSqlKey 1) message']
            shouldBe
              replies
@@ -120,11 +114,11 @@ integrationRegression = do
             (C.runConduit $
              CL.sourceList gmailInput .|
              Duta.SMTP.Receiver.interaction
-               Duta.SMTP.Receiver.Config
-                 { Duta.SMTP.Receiver.configHostname = ""
-                 , Duta.SMTP.Receiver.configOnMsg = const (pure ())
-                 }
-               C.yield .|
+               Duta.SMTP.Receiver.Interaction
+                 { Duta.SMTP.Receiver.interactionHostname = ""
+                 , Duta.SMTP.Receiver.interactionOnMessage = const (pure ())
+                 , Duta.SMTP.Receiver.interactionReply = C.yield
+                 } .|
              CL.consume)
         shouldBe
           xs
@@ -143,11 +137,11 @@ integrationRegression = do
           C.runConduit $
           CL.sourceList postfixInput .|
           Duta.SMTP.Receiver.interaction
-            Duta.SMTP.Receiver.Config
-              { Duta.SMTP.Receiver.configHostname = ""
-              , Duta.SMTP.Receiver.configOnMsg = const (pure ())
-              }
-            C.yield .|
+            Duta.SMTP.Receiver.Interaction
+              { Duta.SMTP.Receiver.interactionHostname = ""
+              , Duta.SMTP.Receiver.interactionOnMessage = const (pure ())
+              , Duta.SMTP.Receiver.interactionReply = C.yield
+              } .|
           CL.consume
         shouldBe
           xs

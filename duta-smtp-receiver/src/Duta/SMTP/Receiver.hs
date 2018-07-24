@@ -1,21 +1,22 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Duta.SMTP.Receiver
     ( start
-    , startWithDB
-    , Config(..)
+    , Start(..)
     , interaction
+    , Interaction(..)
     , Reply (..)
     ) where
 
 import           Control.Exception
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
-import           Control.Monad.IO.Unlift
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
+import           Control.Monad.IO.Unlift
 import qualified Data.Attoparsec.ByteString.Char8 as Atto8
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
@@ -29,15 +30,12 @@ import qualified Data.Conduit.Attoparsec as CA
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as Net
 import           Data.Monoid
+import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import           Data.Time
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
-import           Database.Persist.Sqlite
-import           Duta.Model
-import           Duta.Types.Model
 import           Duta.SMTP.Receiver.MIME
 import           Duta.Types.MIME
 import           System.IO
@@ -53,38 +51,27 @@ data DutaException
   deriving (Typeable, Show)
 instance Exception DutaException
 
-data Config m = Config
-  { configHostname :: String
-  , configOnMsg :: Rfc2822.GenericMessage BodyTree -> m ()
+data Start m = Start
+  { startHostname :: String
+  , startPort :: Int
+  , startOnMessage :: Rfc2822.GenericMessage BodyTree -> m ()
+  , startPool :: Pool SqlBackend
   }
 
-startWithDB :: Int -> String -> LoggingT IO ()
-startWithDB port hostname = do
-  _ <- withSqliteConnInfo (mkSqliteConnectionInfo "duta.db") (runReaderT (runMigration migrateAll))
-  start
-    port
-    (Config
-       { configHostname = hostname
-       , configOnMsg =
-           \msg -> do
-             now <- liftIO getCurrentTime
-             insertModelMessage now msg
-       })
-
-start :: Int -> Config (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
-start port config = do
+start :: Start (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
+start Start {..} = do
   liftIO (hSetBuffering stdout NoBuffering)
   withRunInIO
     (\run ->
        Net.runTCPServer
-         (Net.serverSettings port "*")
+         (Net.serverSettings startPort "*")
          (\appData ->
             run
               (do logInfo
                     ("Got connection from " <>
                      T.pack (show (Net.appSockAddr appData)))
-                  withSqliteConnInfo
-                    (mkSqliteConnectionInfo "duta.db")
+                  withResource
+                    startPool
                     (runReaderT
                        (C.runConduit
                           (Net.appSource appData .|
@@ -95,7 +82,13 @@ start port config = do
                                   (T.pack (show (Net.appSockAddr appData)) <>
                                    "<= " <>
                                    T.pack (show x))) .|
-                           interaction config (liftIO . run . makeReply appData)))))))
+                           interaction
+                             Interaction
+                               { interactionHostname = startHostname
+                               , interactionReply =
+                                   liftIO . run . makeReply appData
+                               , interactionOnMessage = startOnMessage
+                               }))))))
 
 makeReply :: (MonadIO m, MonadLogger m) => Net.AppData -> Reply -> m ()
 makeReply appData rep =
@@ -109,33 +102,37 @@ makeReply appData rep =
              T.pack (show x))) .|
      Net.appSink appData)
 
+data Interaction c m = Interaction
+  { interactionHostname :: String
+  , interactionOnMessage :: Rfc2822.GenericMessage BodyTree -> m ()
+  , interactionReply :: Reply -> C.ConduitT ByteString c m ()
+  }
+
 interaction ::
      (MonadThrow m, MonadLogger m)
-  => Config m
-  -> (Reply -> C.ConduitT ByteString c m ())
+  => Interaction c m
   -> C.ConduitT ByteString c m ()
-interaction config reply = do
-  reply (ServiceReady (S8.pack (configHostname config)))
+interaction Interaction {..} = do
+  interactionReply (ServiceReady (S8.pack interactionHostname))
   receive_ "HELO/EHLO" (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
-  reply (Okay " OK")
+  interactionReply (Okay " OK")
   from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
-  reply (Okay " OK")
+  interactionReply (Okay " OK")
   to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
-  reply (Okay " OK")
+  interactionReply (Okay " OK")
   receive_ "DATA" (Atto8.string "DATA")
-  reply StartMailInput
+  interactionReply StartMailInput
   data' <- consume "<CLRF>.<CLRF> terminated data" dottedParser
-  reply (Okay " OK")
+  interactionReply (Okay " OK")
   receive_ "QUIT" (Atto8.string "QUIT")
-  reply Closing
+  interactionReply Closing
   logInfo
     ("Message from " <> T.decodeUtf8 from <> ", to " <> T.decodeUtf8 to <>
      ", data: " <>
      T.pack (show data'))
   case Parsec.parse Rfc2822.message "" data' of
     Left e -> logError ("Failed to parse input: " <> T.pack (show e))
-    Right msg ->
-      lift (configOnMsg config (parseMessageBodyTree msg))
+    Right msg -> lift (interactionOnMessage (parseMessageBodyTree msg))
 
 receive_ :: (MonadThrow m,MonadLogger m) => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()
