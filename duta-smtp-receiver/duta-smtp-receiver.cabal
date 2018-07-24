@@ -65,6 +65,7 @@ test-suite duta-smtp-receiver-test
                      , HaskellNet
                      , HaskellNet-SSL
                      , hspec
+                     , QuickCheck
                      , async
                      , monad-logger
                      , unliftio-core

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DataKinds #-}
@@ -6,28 +7,62 @@
 
 module Main (main) where
 
+import           Codec.MIME.Base64
 import           Codec.MIME.Parse
 import           Codec.MIME.Type
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as S8
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
+import           Data.Monoid
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
+import           Data.Word
 import           Database.Persist.Sqlite hiding (Single)
 import           Duta.Model
 import qualified Duta.SMTP.Receiver
 import qualified Duta.Types.Model
 import           Test.Hspec
+import           Test.QuickCheck
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
+  describe
+    "Libraries"
+    (describe
+       "mime package"
+       (do it
+             "Codec.MIME.Base64: example roundtrip"
+             (shouldBe
+                (let Single s =
+                       mime_val_content $
+                       parseMIMEMessage $
+                       "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
+                       T.pack (formatOutput 76 Nothing (encodeRaw True image))
+                  in S8.pack (T.unpack s))
+                (S.pack image))
+           it
+             "Codec.MIME.Base64: quickcheck roundtrip"
+             (property
+                (\bytes ->
+                   shouldBe
+                     (let Single s =
+                            mime_val_content $
+                            parseMIMEMessage $
+                            "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
+                            T.pack
+                              (formatOutput 76 Nothing (encodeRaw True bytes))
+                       in S8.pack (T.unpack s))
+                     (S.pack bytes)))))
   describe
     "Integration"
     (do integrationRegression
@@ -309,11 +344,15 @@ gmailAttachmentMessage =
   \\nContent-Type: image/png; name=\"image.png\"\r\nContent-Disposition: attachmen\
   \t; filename=\"image.png\"\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <\
   \f_jjsmsed10>\r\nX-Attachment-Id: f_jjsmsed10\r\n\r\niVBORw0KGgoAAAANSUhEUgAAAAo\
-  \AAAAKCAIAAAACUFjqAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA\r\nB3RJTUUH4gcTDggaWPFqMAAAAU\
-  \FJREFUGNMBNgHJ/gErITUA/v4BAgIAAwT1/f4CAQEHAf8A/P3+\r\n/f7+//0E6/z//v8BDwUESzcvR\
+  \AAAAKCAIAAAACUFjqAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA\r\nB3RJTUUH4gcTDggaWPFqMAAAAUFJREFUGNMBNgHJ/gErITUA/v4BAgIAAwT1/f4CAQEHAf8A/P3+\r\n/f7+//0E6/z//v8BDwUESzcvR\
   \kA3BgsKvcTLt7vE/vr6/P0BBAEIDAgJCh0XEUY6MgUICBEiI34/\r\nO/Pw8brCywQBAAMMFCL9+/oN\
   \BQPQ2dyBj5kF+vvh4eUICAPW3uX/+fsCAwoMAPv5NhoOMx8XUToy\r\nZVBACwL7B+/rUyca/P//AwM\
   \GEgIA/hL9+Qj8/SciGDo3LO/t7TUVC/YDDMXW3QMLFSQB/v0OBwMq\r\nJRzH4OnDztfu3+ABBQeTuM\
   \kA/f0ECg0M+O/31Ojt1+rv+f3+9vX2k21arMXP8/P1AgMDAg4PDwED\r\nBPLz8/Dz8/T09C0lHFBWS\
   \vL3+fz/APr9/QQEAwUQFBb+8e36+vogFhCGd2cPDwz3AgYMGBf8/v98\r\nL5DQe+nw4AAAAABJRU5E\
   \rkJggg==\r\n--000000000000a2a85205715ab8f1--"
+
+image :: [Word8]
+image =
+  S.unpack
+    "\137PNG\r\n\SUB\n\NUL\NUL\NUL\rIHDR\NUL\NUL\NUL\n\NUL\NUL\NUL\n\b\STX\NUL\NUL\NUL\STXPX\234\NUL\NUL\NUL\tpHYs\NUL\NUL\v\DC3\NUL\NUL\v\DC3\SOH\NUL\154\156\CAN\NUL\NUL\NUL\atIME\a\226\a\DC3\SO\b\SUBX\241j0\NUL\NUL\SOHAIDAT\CAN\211\SOH6\SOH\201\254\SOH+!5\NUL\254\254\SOH\STX\STX\NUL\ETX\EOT\245\253\254\STX\SOH\SOH\a\SOH\255\NUL\252\253\254\253\254\254\255\253\EOT\235\252\255\254\255\SOH\SI\ENQ\EOTK7/F@7\ACK\v\n\189\196\203\183\187\196\254\250\250\252\253\SOH\EOT\SOH\b\f\b\t\n\GS\ETB\DC1F:2\ENQ\b\b\DC1\"#~?;\243\240\241\186\194\203\EOT\SOH\NUL\ETX\f\DC4\"\253\251\250\r\ENQ\ETX\208\217\220\129\143\153\ENQ\250\251\225\225\229\b\b\ETX\214\222\229\255\249\251\STX\ETX\n\f\NUL\251\249\&6\SUB\SO3\US\ETBQ:2eP@\v\STX\251\a\239\235S'\SUB\252\255\255\ETX\ETX\ACK\DC2\STX\NUL\254\DC2\253\249\b\252\253'\"\CAN:7,\239\237\237\&5\NAK\v\246\ETX\f\197\214\221\ETX\v\NAK$\SOH\254\253\SO\a\ETX*%\FS\199\224\233\195\206\215\238\223\224\SOH\ENQ\a\147\184\201\NUL\253\253\EOT\n\r\f\248\239\247\212\232\237\215\234\239\249\253\254\246\245\246\147mZ\172\197\207\243\243\245\STX\ETX\ETX\STX\SO\SI\SI\SOH\ETX\EOT\242\243\243\240\243\243\244\244\244-%\FSPVJ\242\247\249\252\255\NUL\250\253\253\EOT\EOT\ETX\ENQ\DLE\DC4\SYN\254\241\237\250\250\250 \SYN\DLE\134wg\SI\SI\f\247\STX\ACK\f\CAN\ETB\252\254\255|/\144\208{\233\240\224\NUL\NUL\NUL\NULIEND\174B`\130"
