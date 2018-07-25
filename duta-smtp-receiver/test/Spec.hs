@@ -203,15 +203,420 @@ postfixInput =
 
 gmailMessageParsed :: MIMEValue
 gmailMessageParsed =
-  MIMEValue {mime_val_type = Type {mimeType = Multipart Alternative, mimeParams = [MIMEParam {paramName = "boundary", paramValue = "000000000000e1518b0570a23972"}]}, mime_val_disp = Nothing, mime_val_content = Multi [MIMEValue {mime_val_type = Type {mimeType = Text "plain", mimeParams = [MIMEParam {paramName = "charset", paramValue = "UTF-8"}]}, mime_val_disp = Nothing, mime_val_content = Single "we continue!\r\n\r\nOn Tue, 10 Jul 2018 at 10:36, Christopher Done <chrisdone@gmail.com> wrote:\r\n\r\n> hey wibble\r\n>\r\n", mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "text/plain; charset=\"UTF-8\""}], mime_val_inc_type = True},MIMEValue {mime_val_type = Type {mimeType = Text "html", mimeParams = [MIMEParam {paramName = "charset", paramValue = "UTF-8"}]}, mime_val_disp = Nothing, mime_val_content = Single "<div dir=\"ltr\">we continue!</div><br><div class=\"gmail_quote\"><div dir=\"ltr\">On Tue, 10 Jul 2018 at 10:36, Christopher Done &lt;<a href=\"mailto:chrisdone@gmail.com\">chrisdone@gmail.com</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex\"><div dir=\"ltr\">hey wibble</div>\r\n</blockquote></div>\r\n", mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "text/html; charset=\"UTF-8\""},MIMEParam {paramName = "content-transfer-encoding", paramValue = "quoted-printable"}], mime_val_inc_type = True}], mime_val_headers = [MIMEParam {paramName = "received", paramValue = "by mail-qk0-f170.google.com with SMTP id b66-v6so11206427qkj.1        for <wibble@chrisdone.com>; Tue, 10 Jul 2018 03:02:22 -0700 (PDT)"},MIMEParam {paramName = "dkim-signature", paramValue = "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20161025;        h=mime-version:references:in-reply-to:reply-to:from:date:message-id         :subject:to;        bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=;        b=NL2PC7xTlI2ampgdRB9B6WzMj/bP+mOvlw/Rtd2+27EMSg5eRdJbs7LjSz8GJV22pl         hF9C8DLTKRo9BrrE6qs27oPMCG0+/eXwOgBQsw/TR2yjvDT2oBnBRkfVjqakVBhmg2GT         Ro+iGjDx8vC1136fI/7A3iXNJnjLHAIYcoMfHEljL7s4hqX8jHzQeWG6+W9jLLH08DFS         IutcEUAnM1DKi8gPP69Qm6i8mEKfHwb8tals8RRthMUhu1w1Hey3djEB5SWpOhU+01BT         fcGxYD10K5ED+T3FfX6CPC+4PMt/7va2ZD8XEfD2Hiogn1unuhjz++jArvq6jWxIxZmB         eQrg=="},MIMEParam {paramName = "x-google-dkim-signature", paramValue = "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20161025;        h=x-gm-message-state:mime-version:references:in-reply-to:reply-to         :from:date:message-id:subject:to;        bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=;        b=soHCjg9EPG07DTHqu/JJyV4+HDqPVNFuLfE56qtggay+5RheihifZ26n/B6CRUSV0x         5C9IxFH1FSaPjkEugcW3wfE39zZyUqro+Ozj1IiB0Za0Srw55Iu5YaYyeEBkSY+VVpdY         NlkNg0/m+gfGo7B05f6CjzqbPQ5iwmOx5kAwS4jKARef0K6Dv2HbeRHYqVCNt66sPGED         zE6TFPxpbdkrDdSdytTevnu00e8IrqvC9rEft6r/nSrP2i0NpdUEuDa+LCFBWfGWwsuV         hrVAtkCTfPOGgJpFCZ+b8uWWqovhnkfWrx0TE0uksW64YqdJXIH9VXGhnWRletjnz6+C         AAyg=="},MIMEParam {paramName = "x-gm-message-state", paramValue = "APt69E11MY8bREVIjYEX2S7HZECtZlfMQ8zqcH1I2F0mDl6fWrrR3grG yhZSXOzxXzHWHKhJEGAtSJyYMDBP063Jz9UTjhaiNQ=="},MIMEParam {paramName = "x-google-smtp-source", paramValue = "AAOMgpeSPyQt6gLoYRDkyjOpo2rN1aBvzv1SdKcmo5DCACWDqPLCUXyocBsaxfYTTsKYRkJp2O9D67xiJMxr5asnlF0="},MIMEParam {paramName = "x-received", paramValue = "by 2002:a37:1028:: with SMTP id a40-v6mr21175009qkh.257.1531216941632; Tue, 10 Jul 2018 03:02:21 -0700 (PDT)"},MIMEParam {paramName = "mime-version", paramValue = "1.0"},MIMEParam {paramName = "references", paramValue = "<CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com>"},MIMEParam {paramName = "in-reply-to", paramValue = "<CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com>"},MIMEParam {paramName = "reply-to", paramValue = "chrisdone@googlemail.com"},MIMEParam {paramName = "from", paramValue = "Christopher Done <chrisdone@gmail.com>"},MIMEParam {paramName = "date", paramValue = "Tue, 10 Jul 2018 11:02:10 +0100"},MIMEParam {paramName = "message-id", paramValue = "<CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com>"},MIMEParam {paramName = "subject", paramValue = "Re: wibbling"},MIMEParam {paramName = "to", paramValue = "wibble@chrisdone.com"},MIMEParam {paramName = "content-type", paramValue = "multipart/alternative; boundary=\"000000000000e1518b0570a23972\""}], mime_val_inc_type = True}
+  MIMEValue
+    { mime_val_type =
+        Type
+          { mimeType = Multipart Alternative
+          , mimeParams =
+              [ MIMEParam
+                  { paramName = "boundary"
+                  , paramValue = "000000000000e1518b0570a23972"
+                  }
+              ]
+          }
+    , mime_val_disp = Nothing
+    , mime_val_content =
+        Multi
+          [ MIMEValue
+              { mime_val_type =
+                  Type
+                    { mimeType = Text "plain"
+                    , mimeParams =
+                        [ MIMEParam
+                            {paramName = "charset", paramValue = "UTF-8"}
+                        ]
+                    }
+              , mime_val_disp = Nothing
+              , mime_val_content =
+                  Single
+                    "we continue!\r\n\r\nOn Tue, 10 Jul 2018 at 10:36, Christopher Done <chrisdone@gmail.com> wrote:\r\n\r\n> hey wibble\r\n>\r\n"
+              , mime_val_headers =
+                  [ MIMEParam
+                      { paramName = "content-type"
+                      , paramValue = "text/plain; charset=\"UTF-8\""
+                      }
+                  ]
+              , mime_val_inc_type = True
+              }
+          , MIMEValue
+              { mime_val_type =
+                  Type
+                    { mimeType = Text "html"
+                    , mimeParams =
+                        [ MIMEParam
+                            {paramName = "charset", paramValue = "UTF-8"}
+                        ]
+                    }
+              , mime_val_disp = Nothing
+              , mime_val_content =
+                  Single
+                    "<div dir=\"ltr\">we continue!</div><br><div class=\"gmail_quote\"><div dir=\"ltr\">On Tue, 10 Jul 2018 at 10:36, Christopher Done &lt;<a href=\"mailto:chrisdone@gmail.com\">chrisdone@gmail.com</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex\"><div dir=\"ltr\">hey wibble</div>\r\n</blockquote></div>\r\n"
+              , mime_val_headers =
+                  [ MIMEParam
+                      { paramName = "content-type"
+                      , paramValue = "text/html; charset=\"UTF-8\""
+                      }
+                  , MIMEParam
+                      { paramName = "content-transfer-encoding"
+                      , paramValue = "quoted-printable"
+                      }
+                  ]
+              , mime_val_inc_type = True
+              }
+          ]
+    , mime_val_headers =
+        [ MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "by mail-qk0-f170.google.com with SMTP id b66-v6so11206427qkj.1        for <wibble@chrisdone.com>; Tue, 10 Jul 2018 03:02:22 -0700 (PDT)"
+            }
+        , MIMEParam
+            { paramName = "dkim-signature"
+            , paramValue =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20161025;        h=mime-version:references:in-reply-to:reply-to:from:date:message-id         :subject:to;        bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=;        b=NL2PC7xTlI2ampgdRB9B6WzMj/bP+mOvlw/Rtd2+27EMSg5eRdJbs7LjSz8GJV22pl         hF9C8DLTKRo9BrrE6qs27oPMCG0+/eXwOgBQsw/TR2yjvDT2oBnBRkfVjqakVBhmg2GT         Ro+iGjDx8vC1136fI/7A3iXNJnjLHAIYcoMfHEljL7s4hqX8jHzQeWG6+W9jLLH08DFS         IutcEUAnM1DKi8gPP69Qm6i8mEKfHwb8tals8RRthMUhu1w1Hey3djEB5SWpOhU+01BT         fcGxYD10K5ED+T3FfX6CPC+4PMt/7va2ZD8XEfD2Hiogn1unuhjz++jArvq6jWxIxZmB         eQrg=="
+            }
+        , MIMEParam
+            { paramName = "x-google-dkim-signature"
+            , paramValue =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20161025;        h=x-gm-message-state:mime-version:references:in-reply-to:reply-to         :from:date:message-id:subject:to;        bh=vuaco1M4EZ4dKC+65I2ne6a/89CLSI3xS3oRZH/qv5s=;        b=soHCjg9EPG07DTHqu/JJyV4+HDqPVNFuLfE56qtggay+5RheihifZ26n/B6CRUSV0x         5C9IxFH1FSaPjkEugcW3wfE39zZyUqro+Ozj1IiB0Za0Srw55Iu5YaYyeEBkSY+VVpdY         NlkNg0/m+gfGo7B05f6CjzqbPQ5iwmOx5kAwS4jKARef0K6Dv2HbeRHYqVCNt66sPGED         zE6TFPxpbdkrDdSdytTevnu00e8IrqvC9rEft6r/nSrP2i0NpdUEuDa+LCFBWfGWwsuV         hrVAtkCTfPOGgJpFCZ+b8uWWqovhnkfWrx0TE0uksW64YqdJXIH9VXGhnWRletjnz6+C         AAyg=="
+            }
+        , MIMEParam
+            { paramName = "x-gm-message-state"
+            , paramValue =
+                "APt69E11MY8bREVIjYEX2S7HZECtZlfMQ8zqcH1I2F0mDl6fWrrR3grG yhZSXOzxXzHWHKhJEGAtSJyYMDBP063Jz9UTjhaiNQ=="
+            }
+        , MIMEParam
+            { paramName = "x-google-smtp-source"
+            , paramValue =
+                "AAOMgpeSPyQt6gLoYRDkyjOpo2rN1aBvzv1SdKcmo5DCACWDqPLCUXyocBsaxfYTTsKYRkJp2O9D67xiJMxr5asnlF0="
+            }
+        , MIMEParam
+            { paramName = "x-received"
+            , paramValue =
+                "by 2002:a37:1028:: with SMTP id a40-v6mr21175009qkh.257.1531216941632; Tue, 10 Jul 2018 03:02:21 -0700 (PDT)"
+            }
+        , MIMEParam {paramName = "mime-version", paramValue = "1.0"}
+        , MIMEParam
+            { paramName = "references"
+            , paramValue =
+                "<CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com>"
+            }
+        , MIMEParam
+            { paramName = "in-reply-to"
+            , paramValue =
+                "<CAAJHNPCBaUTNkaemFyofr=Couam9Eoa-L68jB7p1AUYubWTWSg@mail.gmail.com>"
+            }
+        , MIMEParam
+            {paramName = "reply-to", paramValue = "chrisdone@googlemail.com"}
+        , MIMEParam
+            { paramName = "from"
+            , paramValue = "Christopher Done <chrisdone@gmail.com>"
+            }
+        , MIMEParam
+            {paramName = "date", paramValue = "Tue, 10 Jul 2018 11:02:10 +0100"}
+        , MIMEParam
+            { paramName = "message-id"
+            , paramValue =
+                "<CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com>"
+            }
+        , MIMEParam {paramName = "subject", paramValue = "Re: wibbling"}
+        , MIMEParam {paramName = "to", paramValue = "wibble@chrisdone.com"}
+        , MIMEParam
+            { paramName = "content-type"
+            , paramValue =
+                "multipart/alternative; boundary=\"000000000000e1518b0570a23972\""
+            }
+        ]
+    , mime_val_inc_type = True
+    }
 
 postfixMessageParsed :: MIMEValue
 postfixMessageParsed =
-  MIMEValue {mime_val_type = Type {mimeType = Text "plain", mimeParams = [MIMEParam {paramName = "charset", paramValue = "utf-8"},MIMEParam {paramName = "format", paramValue = "flowed"}]}, mime_val_disp = Nothing, mime_val_content = Single "blah\r\n\r\n.\r\n", mime_val_headers = [MIMEParam {paramName = "received", paramValue = "from solution.localdomain (unknown [79.112.116.6]) by somemore.net (Postfix) with ESMTPSA id E796969A3235 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"},MIMEParam {paramName = "received", paramValue = "from [127.0.0.1] (localhost.localdomain [127.0.0.1]) by solution.localdomain (Postfix) with ESMTP id 0D482240326 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"},MIMEParam {paramName = "to", paramValue = "blah@chrisdone.com"},MIMEParam {paramName = "from", paramValue = "Mihai Bazon <mihai@bazon.net>"},MIMEParam {paramName = "subject", paramValue = "test"},MIMEParam {paramName = "message-id", paramValue = "<2c954fd9-7216-4ed5-f303-69b4e811821d@bazon.net>"},MIMEParam {paramName = "date", paramValue = "Mon, 9 Jul 2018 20:47:59 +0300"},MIMEParam {paramName = "user-agent", paramValue = "Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Thunderbird/52.8.0"},MIMEParam {paramName = "mime-version", paramValue = "1.0"},MIMEParam {paramName = "content-type", paramValue = "text/plain; charset=utf-8; format=flowed"},MIMEParam {paramName = "content-transfer-encoding", paramValue = "7bit"},MIMEParam {paramName = "content-language", paramValue = "en-US"}], mime_val_inc_type = True}
+  MIMEValue
+    { mime_val_type =
+        Type
+          { mimeType = Text "plain"
+          , mimeParams =
+              [ MIMEParam {paramName = "charset", paramValue = "utf-8"}
+              , MIMEParam {paramName = "format", paramValue = "flowed"}
+              ]
+          }
+    , mime_val_disp = Nothing
+    , mime_val_content = Single "blah\r\n\r\n.\r\n"
+    , mime_val_headers =
+        [ MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "from solution.localdomain (unknown [79.112.116.6]) by somemore.net (Postfix) with ESMTPSA id E796969A3235 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"
+            }
+        , MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "from [127.0.0.1] (localhost.localdomain [127.0.0.1]) by solution.localdomain (Postfix) with ESMTP id 0D482240326 for <blah@chrisdone.com>; Mon,  9 Jul 2018 20:48:00 +0300 (EEST)"
+            }
+        , MIMEParam {paramName = "to", paramValue = "blah@chrisdone.com"}
+        , MIMEParam
+            {paramName = "from", paramValue = "Mihai Bazon <mihai@bazon.net>"}
+        , MIMEParam {paramName = "subject", paramValue = "test"}
+        , MIMEParam
+            { paramName = "message-id"
+            , paramValue = "<2c954fd9-7216-4ed5-f303-69b4e811821d@bazon.net>"
+            }
+        , MIMEParam
+            {paramName = "date", paramValue = "Mon, 9 Jul 2018 20:47:59 +0300"}
+        , MIMEParam
+            { paramName = "user-agent"
+            , paramValue =
+                "Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Thunderbird/52.8.0"
+            }
+        , MIMEParam {paramName = "mime-version", paramValue = "1.0"}
+        , MIMEParam
+            { paramName = "content-type"
+            , paramValue = "text/plain; charset=utf-8; format=flowed"
+            }
+        , MIMEParam
+            {paramName = "content-transfer-encoding", paramValue = "7bit"}
+        , MIMEParam {paramName = "content-language", paramValue = "en-US"}
+        ]
+    , mime_val_inc_type = True
+    }
 
 gmailAttachmentParsed :: MIMEValue
 gmailAttachmentParsed =
-  MIMEValue {mime_val_type = Type {mimeType = Multipart Mixed, mimeParams = [MIMEParam {paramName = "boundary", paramValue = "000000000000a2a85205715ab8f1"}]}, mime_val_disp = Nothing, mime_val_content = Multi [MIMEValue {mime_val_type = Type {mimeType = Multipart Alternative, mimeParams = [MIMEParam {paramName = "boundary", paramValue = "000000000000a2a84f05715ab8ef"}]}, mime_val_disp = Nothing, mime_val_content = Multi [MIMEValue {mime_val_type = Type {mimeType = Text "plain", mimeParams = [MIMEParam {paramName = "charset", paramValue = "UTF-8"}]}, mime_val_disp = Nothing, mime_val_content = Single "Here's a smaller file\r\n", mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "text/plain; charset=\"UTF-8\""}], mime_val_inc_type = True},MIMEValue {mime_val_type = Type {mimeType = Text "html", mimeParams = [MIMEParam {paramName = "charset", paramValue = "UTF-8"}]}, mime_val_disp = Nothing, mime_val_content = Single "<div dir=\"ltr\">Here&#39;s a smaller file</div>\r\n", mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "text/html; charset=\"UTF-8\""}], mime_val_inc_type = True}], mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "multipart/alternative; boundary=\"000000000000a2a84f05715ab8ef\""}], mime_val_inc_type = True},MIMEValue {mime_val_type = Type {mimeType = Image "png", mimeParams = [MIMEParam {paramName = "name", paramValue = "image.png"}]}, mime_val_disp = Just (Disposition {dispType = DispAttachment, dispParams = [Filename "image.png"]}), mime_val_content = Single "\137PNG\r\n\SUB\n\NUL\NUL\NUL\rIHDR\NUL\NUL\NUL\n\NUL\NUL\NUL\n\b\STX\NUL\NUL\NUL\STXPX\234\NUL\NUL\NUL\tpHYs\NUL\NUL\v\DC3\NUL\NUL\v\DC3\SOH\NUL\154\156\CAN\NUL\NUL\NUL\atIME\a\226\a\DC3\SO\b\SUBX\241j0\NUL\NUL\SOHAIDAT\CAN\211\SOH6\SOH\201\254\SOH+!5\NUL\254\254\SOH\STX\STX\NUL\ETX\EOT\245\253\254\STX\SOH\SOH\a\SOH\255\NUL\252\253\254\253\254\254\255\253\EOT\235\252\255\254\255\SOH\SI\ENQ\EOTK7/F@7\ACK\v\n\189\196\203\183\187\196\254\250\250\252\253\SOH\EOT\SOH\b\f\b\t\n\GS\ETB\DC1F:2\ENQ\b\b\DC1\"#~?;\243\240\241\186\194\203\EOT\SOH\NUL\ETX\f\DC4\"\253\251\250\r\ENQ\ETX\208\217\220\129\143\153\ENQ\250\251\225\225\229\b\b\ETX\214\222\229\255\249\251\STX\ETX\n\f\NUL\251\249\&6\SUB\SO3\US\ETBQ:2eP@\v\STX\251\a\239\235S'\SUB\252\255\255\ETX\ETX\ACK\DC2\STX\NUL\254\DC2\253\249\b\252\253'\"\CAN:7,\239\237\237\&5\NAK\v\246\ETX\f\197\214\221\ETX\v\NAK$\SOH\254\253\SO\a\ETX*%\FS\199\224\233\195\206\215\238\223\224\SOH\ENQ\a\147\184\201\NUL\253\253\EOT\n\r\f\248\239\247\212\232\237\215\234\239\249\253\254\246\245\246\147mZ\172\197\207\243\243\245\STX\ETX\ETX\STX\SO\SI\SI\SOH\ETX\EOT\242\243\243\240\243\243\244\244\244-%\FSPVJ\242\247\249\252\255\NUL\250\253\253\EOT\EOT\ETX\ENQ\DLE\DC4\SYN\254\241\237\250\250\250 \SYN\DLE\134wg\SI\SI\f\247\STX\ACK\f\CAN\ETB\252\254\255|/\144\208{\233\240\224\NUL\NUL\NUL\NULIEND\174B`\130", mime_val_headers = [MIMEParam {paramName = "content-type", paramValue = "image/png; name=\"image.png\""},MIMEParam {paramName = "content-disposition", paramValue = "attachment; filename=\"image.png\""},MIMEParam {paramName = "content-transfer-encoding", paramValue = "base64"},MIMEParam {paramName = "content-id", paramValue = "<f_jjsmsed10>"},MIMEParam {paramName = "x-attachment-id", paramValue = "f_jjsmsed10"}], mime_val_inc_type = True}], mime_val_headers = [MIMEParam {paramName = "received", paramValue = "by mail-qt0-f171.google.com with SMTP id e19-v6so7264767qtp.8        for <gmail@chrisdone.com>; Thu, 19 Jul 2018 07:09:03 -0700 (PDT)"},MIMEParam {paramName = "x-google-dkim-signature", paramValue = "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20161025;        h=x-gm-message-state:delivered-to:dkim-signature:mime-version         :reply-to:from:date:message-id:subject:to;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=qH82tD41/S0PazkpbjZnRtbusDRWavXYD/rlhvITJAqniJ9egT1bZPotIwd0vEWV+R         ns1IJD/nkB0pIYscDPC0SHlgG5NSf7eT4/N9FXM1nBDOSTEoXluWmEDDNLrA+I/v8LNf         E/QpR4RObmTh9wWjGc/Ybd4ZWXY+BA4iUteTr8XYuup3/vBbT+SJuYYPEgFRdCaXP0mn         sgi3cuChqyZsmbdTZ03A+Dk0qH0VFdp28e+61t1eDdLMDPiNzbS2hw6wlJIpKmY6Gvh0         eXYwvShOFq2NmbOkXCwxglp7WzlHD+3b93zsgHtRSQWGdz1ESR3c2FtlSg44lYmtG8Ys         lGMg=="},MIMEParam {paramName = "x-gm-message-state", paramValue = "AOUpUlEvxWR7XP0aUlTk7Gjivd1eWOPTNPmdMbdHSK9qBGs8rFEb50Sd 4LzEFkdsMUBwIuOjwdeYH+3yAu/uxstOk9fvBRCPYP1liQL7EAbcCg=="},MIMEParam {paramName = "x-received", paramValue = "by 2002:ac8:246b:: with SMTP id d40-v6mr9987658qtd.196.1532009343604;        Thu, 19 Jul 2018 07:09:03 -0700 (PDT)"},MIMEParam {paramName = "x-forwarded-to", paramValue = "gmail@chrisdone.com"},MIMEParam {paramName = "x-forwarded-for", paramValue = "chrisdone@gmail.com gmail@chrisdone.com"},MIMEParam {paramName = "delivered-to", paramValue = "chrisdone@gmail.com"},MIMEParam {paramName = "received", paramValue = "by 2002:ac8:363:0:0:0:0:0 with SMTP id w35-v6csp1775618qtg;        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"},MIMEParam {paramName = "x-received", paramValue = "by 2002:a0c:9692:: with SMTP id a18-v6mr10975278qvd.16.1532009342920;        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"},MIMEParam {paramName = "arc-seal", paramValue = "i=1; a=rsa-sha256; t=1532009342; cv=none;        d=google.com; s=arc-20160816;        b=uuOieQD4b/ilUKSb9Nt1yk6S+p2b3KSaT2y8mHsbT68iEDWYlWggx+7UVofi3UmLWm         Xb59gox1168w4A4C3tJyd/5F8/IWWf3ICgkespW76LRz4RFLrOtmSSX8KqXjbqhQgxVO         Zn7oaBeEyLVAwPXMbCl5BEJMNnDDyChCrFNDtkIv2zKowqQ304iLUOaTUIpryjzuG4KW         iyc9ogiISsFGMEsxrCQiEZx4L2IdVMldeejGGL5j4oCX0HMs9PLSk3wbtVMF+quywobm         pdYsmlUq5+9DDDnespiJNyhzm1niNVOPEWT/t3MyHc2WxlzGYWrWy1BNRy1z3V4bkyLa         ue6A=="},MIMEParam {paramName = "arc-message-signature", paramValue = "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;        h=to:subject:message-id:date:from:reply-to:mime-version         :dkim-signature:arc-authentication-results;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=agS65Xltmi+hxKgmxjiMGtziCdsSW0EMp3HcYcKzk0TqHJIos2jIwWQ1m1lV2g0FzF         +Zihia+r5+w35pjzv7/caV3q7NLy92hf5DJEIUQawduL4Kf4A9eB8ui7sikOxr3XzJD3         MM0kevphd19djEeuRRBOI91hd909mXQv1Xu8yKzPECa0H4vo1CJt/lDltRTtf9fHsS2o         qlczFBBQBWSb311/PTPwZxDeTR5hxHp0sCKwrz44hV7h/5onPXPKBrmi82x3KDJyBrAR         9nLFAt2FbW2zte3kuXszNLU5F7qJjvBnzGl8Eu4eITAdLK3iHyyV7wn5ldH6fJpYdbNX         G86A=="},MIMEParam {paramName = "arc-authentication-results", paramValue = "i=1; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20161025 header.b=EvyvF+GU;       spf=pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=chrisdone@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com"},MIMEParam {paramName = "return-path", paramValue = "<chrisdone@gmail.com>"},MIMEParam {paramName = "received", paramValue = "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id q86-v6sor2954059qkl.125.2018.07.19.07.09.02        for <chrisdone@gmail.com>        (Google Transport Security);        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"},MIMEParam {paramName = "received-spf", paramValue = "pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"},MIMEParam {paramName = "authentication-results", paramValue = "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20161025 header.b=EvyvF+GU;       spf=pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=chrisdone@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com"},MIMEParam {paramName = "dkim-signature", paramValue = "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20161025;        h=mime-version:reply-to:from:date:message-id:subject:to;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=EvyvF+GUxlJDAgAaVuVSXEmBQBw4SoRakKvtwH8/hlOmJr06WezNw7LnDc18zl9ipy         Ev6l6QxI5R7C0mNUab0MS5scVPd+6gLstFZLUDDeCoLQvWAJi87FE/NkjWGGKH8/HGwZ         8QkS1N/HN+ums0lOZj5qBRLVDnjxUZyIRXy3ll4w6kxwyGqnYEWaW5xw6ZsM4o5pMoPc         Rdsr7tf2FJ6PTeZn2c4vUZ7qSluZ4fh6XEq3GKKgX3pCrsUnGHkOWB6fUeJ2WSP7Mtwu         4SP9hvoMLJ5RXP45iOKxNXVMPnDf4F45XkfltRnfB6NPqt1Lt9lRMu8Dq1fLaMn1P9gi         cdSg=="},MIMEParam {paramName = "x-google-smtp-source", paramValue = "AAOMgpeIG6F5LUaxSpQAVmrSnpyHQbIwtKXJ8Pq9iMYg2hNzDXJD3T6HnaubNg2jziTurWge+pMNfm5Mqu0AgZUo8+E="},MIMEParam {paramName = "x-received", paramValue = "by 2002:a37:b506:: with SMTP id e6-v6mr9121547qkf.255.1532009342201; Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"},MIMEParam {paramName = "mime-version", paramValue = "1.0"},MIMEParam {paramName = "reply-to", paramValue = "chrisdone@googlemail.com"},MIMEParam {paramName = "from", paramValue = "Christopher Done <chrisdone@gmail.com>"},MIMEParam {paramName = "date", paramValue = "Thu, 19 Jul 2018 15:08:50 +0100"},MIMEParam {paramName = "message-id", paramValue = "<CAAJHNPC_aoWp0AFqHtr2cfYLsC=uWnQ_iMUNn-hcOdX-SDC-Qg@mail.gmail.com>"},MIMEParam {paramName = "subject", paramValue = "Smaller file"},MIMEParam {paramName = "to", paramValue = "Chris D <chrisdone@gmail.com>"},MIMEParam {paramName = "content-type", paramValue = "multipart/mixed; boundary=\"000000000000a2a85205715ab8f1\""}], mime_val_inc_type = True}
+  MIMEValue
+    { mime_val_type =
+        Type
+          { mimeType = Multipart Mixed
+          , mimeParams =
+              [ MIMEParam
+                  { paramName = "boundary"
+                  , paramValue = "000000000000a2a85205715ab8f1"
+                  }
+              ]
+          }
+    , mime_val_disp = Nothing
+    , mime_val_content =
+        Multi
+          [ MIMEValue
+              { mime_val_type =
+                  Type
+                    { mimeType = Multipart Alternative
+                    , mimeParams =
+                        [ MIMEParam
+                            { paramName = "boundary"
+                            , paramValue = "000000000000a2a84f05715ab8ef"
+                            }
+                        ]
+                    }
+              , mime_val_disp = Nothing
+              , mime_val_content =
+                  Multi
+                    [ MIMEValue
+                        { mime_val_type =
+                            Type
+                              { mimeType = Text "plain"
+                              , mimeParams =
+                                  [ MIMEParam
+                                      { paramName = "charset"
+                                      , paramValue = "UTF-8"
+                                      }
+                                  ]
+                              }
+                        , mime_val_disp = Nothing
+                        , mime_val_content = Single "Here's a smaller file\r\n"
+                        , mime_val_headers =
+                            [ MIMEParam
+                                { paramName = "content-type"
+                                , paramValue = "text/plain; charset=\"UTF-8\""
+                                }
+                            ]
+                        , mime_val_inc_type = True
+                        }
+                    , MIMEValue
+                        { mime_val_type =
+                            Type
+                              { mimeType = Text "html"
+                              , mimeParams =
+                                  [ MIMEParam
+                                      { paramName = "charset"
+                                      , paramValue = "UTF-8"
+                                      }
+                                  ]
+                              }
+                        , mime_val_disp = Nothing
+                        , mime_val_content =
+                            Single
+                              "<div dir=\"ltr\">Here&#39;s a smaller file</div>\r\n"
+                        , mime_val_headers =
+                            [ MIMEParam
+                                { paramName = "content-type"
+                                , paramValue = "text/html; charset=\"UTF-8\""
+                                }
+                            ]
+                        , mime_val_inc_type = True
+                        }
+                    ]
+              , mime_val_headers =
+                  [ MIMEParam
+                      { paramName = "content-type"
+                      , paramValue =
+                          "multipart/alternative; boundary=\"000000000000a2a84f05715ab8ef\""
+                      }
+                  ]
+              , mime_val_inc_type = True
+              }
+          , MIMEValue
+              { mime_val_type =
+                  Type
+                    { mimeType = Image "png"
+                    , mimeParams =
+                        [ MIMEParam
+                            {paramName = "name", paramValue = "image.png"}
+                        ]
+                    }
+              , mime_val_disp =
+                  Just
+                    (Disposition
+                       { dispType = DispAttachment
+                       , dispParams = [Filename "image.png"]
+                       })
+              , mime_val_content =
+                  Single
+                    "\137PNG\r\n\SUB\n\NUL\NUL\NUL\rIHDR\NUL\NUL\NUL\n\NUL\NUL\NUL\n\b\STX\NUL\NUL\NUL\STXPX\234\NUL\NUL\NUL\tpHYs\NUL\NUL\v\DC3\NUL\NUL\v\DC3\SOH\NUL\154\156\CAN\NUL\NUL\NUL\atIME\a\226\a\DC3\SO\b\SUBX\241j0\NUL\NUL\SOHAIDAT\CAN\211\SOH6\SOH\201\254\SOH+!5\NUL\254\254\SOH\STX\STX\NUL\ETX\EOT\245\253\254\STX\SOH\SOH\a\SOH\255\NUL\252\253\254\253\254\254\255\253\EOT\235\252\255\254\255\SOH\SI\ENQ\EOTK7/F@7\ACK\v\n\189\196\203\183\187\196\254\250\250\252\253\SOH\EOT\SOH\b\f\b\t\n\GS\ETB\DC1F:2\ENQ\b\b\DC1\"#~?;\243\240\241\186\194\203\EOT\SOH\NUL\ETX\f\DC4\"\253\251\250\r\ENQ\ETX\208\217\220\129\143\153\ENQ\250\251\225\225\229\b\b\ETX\214\222\229\255\249\251\STX\ETX\n\f\NUL\251\249\&6\SUB\SO3\US\ETBQ:2eP@\v\STX\251\a\239\235S'\SUB\252\255\255\ETX\ETX\ACK\DC2\STX\NUL\254\DC2\253\249\b\252\253'\"\CAN:7,\239\237\237\&5\NAK\v\246\ETX\f\197\214\221\ETX\v\NAK$\SOH\254\253\SO\a\ETX*%\FS\199\224\233\195\206\215\238\223\224\SOH\ENQ\a\147\184\201\NUL\253\253\EOT\n\r\f\248\239\247\212\232\237\215\234\239\249\253\254\246\245\246\147mZ\172\197\207\243\243\245\STX\ETX\ETX\STX\SO\SI\SI\SOH\ETX\EOT\242\243\243\240\243\243\244\244\244-%\FSPVJ\242\247\249\252\255\NUL\250\253\253\EOT\EOT\ETX\ENQ\DLE\DC4\SYN\254\241\237\250\250\250 \SYN\DLE\134wg\SI\SI\f\247\STX\ACK\f\CAN\ETB\252\254\255|/\144\208{\233\240\224\NUL\NUL\NUL\NULIEND\174B`\130"
+              , mime_val_headers =
+                  [ MIMEParam
+                      { paramName = "content-type"
+                      , paramValue = "image/png; name=\"image.png\""
+                      }
+                  , MIMEParam
+                      { paramName = "content-disposition"
+                      , paramValue = "attachment; filename=\"image.png\""
+                      }
+                  , MIMEParam
+                      { paramName = "content-transfer-encoding"
+                      , paramValue = "base64"
+                      }
+                  , MIMEParam
+                      {paramName = "content-id", paramValue = "<f_jjsmsed10>"}
+                  , MIMEParam
+                      { paramName = "x-attachment-id"
+                      , paramValue = "f_jjsmsed10"
+                      }
+                  ]
+              , mime_val_inc_type = True
+              }
+          ]
+    , mime_val_headers =
+        [ MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "by mail-qt0-f171.google.com with SMTP id e19-v6so7264767qtp.8        for <gmail@chrisdone.com>; Thu, 19 Jul 2018 07:09:03 -0700 (PDT)"
+            }
+        , MIMEParam
+            { paramName = "x-google-dkim-signature"
+            , paramValue =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20161025;        h=x-gm-message-state:delivered-to:dkim-signature:mime-version         :reply-to:from:date:message-id:subject:to;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=qH82tD41/S0PazkpbjZnRtbusDRWavXYD/rlhvITJAqniJ9egT1bZPotIwd0vEWV+R         ns1IJD/nkB0pIYscDPC0SHlgG5NSf7eT4/N9FXM1nBDOSTEoXluWmEDDNLrA+I/v8LNf         E/QpR4RObmTh9wWjGc/Ybd4ZWXY+BA4iUteTr8XYuup3/vBbT+SJuYYPEgFRdCaXP0mn         sgi3cuChqyZsmbdTZ03A+Dk0qH0VFdp28e+61t1eDdLMDPiNzbS2hw6wlJIpKmY6Gvh0         eXYwvShOFq2NmbOkXCwxglp7WzlHD+3b93zsgHtRSQWGdz1ESR3c2FtlSg44lYmtG8Ys         lGMg=="
+            }
+        , MIMEParam
+            { paramName = "x-gm-message-state"
+            , paramValue =
+                "AOUpUlEvxWR7XP0aUlTk7Gjivd1eWOPTNPmdMbdHSK9qBGs8rFEb50Sd 4LzEFkdsMUBwIuOjwdeYH+3yAu/uxstOk9fvBRCPYP1liQL7EAbcCg=="
+            }
+        , MIMEParam
+            { paramName = "x-received"
+            , paramValue =
+                "by 2002:ac8:246b:: with SMTP id d40-v6mr9987658qtd.196.1532009343604;        Thu, 19 Jul 2018 07:09:03 -0700 (PDT)"
+            }
+        , MIMEParam
+            {paramName = "x-forwarded-to", paramValue = "gmail@chrisdone.com"}
+        , MIMEParam
+            { paramName = "x-forwarded-for"
+            , paramValue = "chrisdone@gmail.com gmail@chrisdone.com"
+            }
+        , MIMEParam
+            {paramName = "delivered-to", paramValue = "chrisdone@gmail.com"}
+        , MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "by 2002:ac8:363:0:0:0:0:0 with SMTP id w35-v6csp1775618qtg;        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"
+            }
+        , MIMEParam
+            { paramName = "x-received"
+            , paramValue =
+                "by 2002:a0c:9692:: with SMTP id a18-v6mr10975278qvd.16.1532009342920;        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"
+            }
+        , MIMEParam
+            { paramName = "arc-seal"
+            , paramValue =
+                "i=1; a=rsa-sha256; t=1532009342; cv=none;        d=google.com; s=arc-20160816;        b=uuOieQD4b/ilUKSb9Nt1yk6S+p2b3KSaT2y8mHsbT68iEDWYlWggx+7UVofi3UmLWm         Xb59gox1168w4A4C3tJyd/5F8/IWWf3ICgkespW76LRz4RFLrOtmSSX8KqXjbqhQgxVO         Zn7oaBeEyLVAwPXMbCl5BEJMNnDDyChCrFNDtkIv2zKowqQ304iLUOaTUIpryjzuG4KW         iyc9ogiISsFGMEsxrCQiEZx4L2IdVMldeejGGL5j4oCX0HMs9PLSk3wbtVMF+quywobm         pdYsmlUq5+9DDDnespiJNyhzm1niNVOPEWT/t3MyHc2WxlzGYWrWy1BNRy1z3V4bkyLa         ue6A=="
+            }
+        , MIMEParam
+            { paramName = "arc-message-signature"
+            , paramValue =
+                "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;        h=to:subject:message-id:date:from:reply-to:mime-version         :dkim-signature:arc-authentication-results;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=agS65Xltmi+hxKgmxjiMGtziCdsSW0EMp3HcYcKzk0TqHJIos2jIwWQ1m1lV2g0FzF         +Zihia+r5+w35pjzv7/caV3q7NLy92hf5DJEIUQawduL4Kf4A9eB8ui7sikOxr3XzJD3         MM0kevphd19djEeuRRBOI91hd909mXQv1Xu8yKzPECa0H4vo1CJt/lDltRTtf9fHsS2o         qlczFBBQBWSb311/PTPwZxDeTR5hxHp0sCKwrz44hV7h/5onPXPKBrmi82x3KDJyBrAR         9nLFAt2FbW2zte3kuXszNLU5F7qJjvBnzGl8Eu4eITAdLK3iHyyV7wn5ldH6fJpYdbNX         G86A=="
+            }
+        , MIMEParam
+            { paramName = "arc-authentication-results"
+            , paramValue =
+                "i=1; mx.google.com;       dkim=pass header.i=@gmail.com header.s=20161025 header.b=EvyvF+GU;       spf=pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=chrisdone@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com"
+            }
+        , MIMEParam
+            {paramName = "return-path", paramValue = "<chrisdone@gmail.com>"}
+        , MIMEParam
+            { paramName = "received"
+            , paramValue =
+                "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])        by mx.google.com with SMTPS id q86-v6sor2954059qkl.125.2018.07.19.07.09.02        for <chrisdone@gmail.com>        (Google Transport Security);        Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"
+            }
+        , MIMEParam
+            { paramName = "received-spf"
+            , paramValue =
+                "pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"
+            }
+        , MIMEParam
+            { paramName = "authentication-results"
+            , paramValue =
+                "mx.google.com;       dkim=pass header.i=@gmail.com header.s=20161025 header.b=EvyvF+GU;       spf=pass (google.com: domain of chrisdone@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=chrisdone@gmail.com;       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com"
+            }
+        , MIMEParam
+            { paramName = "dkim-signature"
+            , paramValue =
+                "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20161025;        h=mime-version:reply-to:from:date:message-id:subject:to;        bh=Oli/DfRXOO3EH3Cpo48noh3QdZQ2z2xbdYBhVxjaTOI=;        b=EvyvF+GUxlJDAgAaVuVSXEmBQBw4SoRakKvtwH8/hlOmJr06WezNw7LnDc18zl9ipy         Ev6l6QxI5R7C0mNUab0MS5scVPd+6gLstFZLUDDeCoLQvWAJi87FE/NkjWGGKH8/HGwZ         8QkS1N/HN+ums0lOZj5qBRLVDnjxUZyIRXy3ll4w6kxwyGqnYEWaW5xw6ZsM4o5pMoPc         Rdsr7tf2FJ6PTeZn2c4vUZ7qSluZ4fh6XEq3GKKgX3pCrsUnGHkOWB6fUeJ2WSP7Mtwu         4SP9hvoMLJ5RXP45iOKxNXVMPnDf4F45XkfltRnfB6NPqt1Lt9lRMu8Dq1fLaMn1P9gi         cdSg=="
+            }
+        , MIMEParam
+            { paramName = "x-google-smtp-source"
+            , paramValue =
+                "AAOMgpeIG6F5LUaxSpQAVmrSnpyHQbIwtKXJ8Pq9iMYg2hNzDXJD3T6HnaubNg2jziTurWge+pMNfm5Mqu0AgZUo8+E="
+            }
+        , MIMEParam
+            { paramName = "x-received"
+            , paramValue =
+                "by 2002:a37:b506:: with SMTP id e6-v6mr9121547qkf.255.1532009342201; Thu, 19 Jul 2018 07:09:02 -0700 (PDT)"
+            }
+        , MIMEParam {paramName = "mime-version", paramValue = "1.0"}
+        , MIMEParam
+            {paramName = "reply-to", paramValue = "chrisdone@googlemail.com"}
+        , MIMEParam
+            { paramName = "from"
+            , paramValue = "Christopher Done <chrisdone@gmail.com>"
+            }
+        , MIMEParam
+            {paramName = "date", paramValue = "Thu, 19 Jul 2018 15:08:50 +0100"}
+        , MIMEParam
+            { paramName = "message-id"
+            , paramValue =
+                "<CAAJHNPC_aoWp0AFqHtr2cfYLsC=uWnQ_iMUNn-hcOdX-SDC-Qg@mail.gmail.com>"
+            }
+        , MIMEParam {paramName = "subject", paramValue = "Smaller file"}
+        , MIMEParam
+            {paramName = "to", paramValue = "Chris D <chrisdone@gmail.com>"}
+        , MIMEParam
+            { paramName = "content-type"
+            , paramValue =
+                "multipart/mixed; boundary=\"000000000000a2a85205715ab8f1\""
+            }
+        ]
+    , mime_val_inc_type = True
+    }
 
 gmailMessage :: Text
 gmailMessage =
