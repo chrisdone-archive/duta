@@ -12,7 +12,9 @@ module Duta.Types.Model where
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Time
+import Database.Persist.Sql
 import Database.Persist.TH
+import Duta.Types.Order
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Message
@@ -24,11 +26,13 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Eq
 
   MultiPart
+    ordering Order
     message MessageId
     parent MultiPartId Maybe
     contentType Text
 
   PlainTextPart
+    ordering Order
     message MessageId
     parent MultiPartId Maybe
     content Text
@@ -36,6 +40,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Eq
 
   HtmlPart
+    ordering Order
     message MessageId
     parent MultiPartId Maybe
     content Text
@@ -43,6 +48,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Eq
 
   BinaryPart
+    ordering Order
     message MessageId
     parent MultiPartId Maybe
     contentType Text
