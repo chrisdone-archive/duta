@@ -16,9 +16,12 @@ library
   ghc-options:         -Wall
   exposed-modules:
     Duta.SMTP.Receiver
+  other-modules:
+    Data.Conduit.Network.Timeout
   build-depends:       base >= 4.7 && < 5,
                        conduit,
                        conduit-extra,
+                       streaming-commons,
                        network-conduit-tls,
                        bytestring,
                        attoparsec,

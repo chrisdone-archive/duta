@@ -13,7 +13,7 @@ module Duta.SMTP.Receiver
 
 import           Codec.MIME.Parse
 import           Codec.MIME.Type
-import           Control.Exception
+import           Control.Exception hiding (catch)
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.IO.Unlift
@@ -30,7 +30,8 @@ import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.Attoparsec as CA
 import qualified Data.Conduit.List as CL
-import qualified Data.Conduit.Network as Net
+import qualified Data.Conduit.Network as Net hiding (appSource, appSink)
+import qualified Data.Conduit.Network.Timeout as Connector
 import           Data.Monoid
 import           Data.Pool
 import           Data.Text (Text)
@@ -38,13 +39,13 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
-import           System.IO
 
 --------------------------------------------------------------------------------
 -- Constants
 
 data DutaException
   = ClientQuitUnexpectedly
+  | ClientTimeout
   | FailedToParseInput
   deriving (Typeable, Show)
 instance Exception DutaException
@@ -57,48 +58,62 @@ data Start m = Start
   }
 
 start :: Start (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
-start Start {..} = do
-  liftIO (hSetBuffering stdout NoBuffering)
+start Start {..} =
   withRunInIO
     (\run ->
        Net.runTCPServer
          (Net.serverSettings startPort "*")
          (\appData ->
             run
-              (do logInfo
-                    ("Got connection from " <>
-                     T.pack (show (Net.appSockAddr appData)))
-                  withResource
-                    startPool
-                    (runReaderT
-                       (C.runConduit
-                          (Net.appSource appData .|
-                           CL.mapM
-                             (\x ->
-                                x <$
-                                logDebug
-                                  (T.pack (show (Net.appSockAddr appData)) <>
-                                   "<= " <>
-                                   T.pack (show x))) .|
-                           interaction
-                             Interaction
-                               { interactionHostname = startHostname
-                               , interactionReply =
-                                   liftIO . run . makeReply appData
-                               , interactionOnMessage = startOnMessage
-                               }))))))
+              (do let ip = T.pack (show (Net.appSockAddr appData))
+                  logInfo ("Got connection from " <> ip)
+                  catch
+                    (do withResource
+                          startPool
+                          (runReaderT
+                             (C.runConduit
+                                ((do reason <-
+                                       Connector.appSource
+                                         (Connector.defaultConnector appData)
+                                     case reason of
+                                       Connector.Finished ->
+                                         throwM ClientQuitUnexpectedly
+                                       Connector.ReadWriteTimeout ->
+                                         throwM ClientTimeout) .|
+                                 CL.mapM
+                                   (\x ->
+                                      x <$
+                                      logDebug (ip <> " <= " <> T.pack (show x))) .|
+                                 interaction
+                                   Interaction
+                                     { interactionHostname = startHostname
+                                     , interactionReply =
+                                         liftIO . run . makeReply appData
+                                     , interactionOnMessage = startOnMessage
+                                     })))
+                        logInfo ("Done, closing connection: " <> ip))
+                    (\case
+                       ClientQuitUnexpectedly ->
+                         logError (ip <> " quit unexpectedly.")
+                       ClientTimeout -> logWarn (ip <> " timed out.")
+                       FailedToParseInput ->
+                         logError (ip <> " failed to parse input.")))))
 
-makeReply :: (MonadIO m, MonadLogger m) => Net.AppData -> Reply -> m ()
-makeReply appData rep =
-  C.runConduit
-    (C.yield (L.toStrict (L.toLazyByteString (buildReply rep <> "\r\n"))) .|
-     CL.mapM
-       (\x ->
-          x <$
-          logDebug
-            (T.pack (show (Net.appSockAddr appData)) <> "=> " <>
-             T.pack (show x))) .|
-     Net.appSink appData)
+makeReply :: (MonadIO m, MonadThrow m, MonadLogger m) => Net.AppData -> Reply -> m ()
+makeReply appData rep = do
+  reason <-
+    C.runConduit
+      (C.yield (L.toStrict (L.toLazyByteString (buildReply rep <> "\r\n"))) .|
+       CL.mapM
+         (\x ->
+            x <$
+            logDebug
+              (T.pack (show (Net.appSockAddr appData)) <> " => " <>
+               T.pack (show x))) .|
+       Connector.appSink (Connector.defaultConnector appData))
+  case reason of
+    Connector.ReadWriteTimeout -> throwM ClientTimeout
+    Connector.Finished -> pure ()
 
 data Interaction c m = Interaction
   { interactionHostname :: String
