@@ -20,8 +20,8 @@ main = do
   ((host, port, dbfile, connections), ()) <-
     simpleOptions
       "0.0.0"
-      "sift"
-      "Sift through Haskell modules"
+      "duta-smtp-receiver"
+      "SMTP receiver"
       ((,,,) <$>
        strOption
          (metavar "HOSTNAME" <> help "Hostname to listen on" <> long "hostname") <*>

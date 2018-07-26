@@ -1,7 +1,12 @@
 resolver: lts-11.13
 packages:
 - duta-smtp-receiver
+- duta-web
 - duta-types
 - duta-model
+- location:
+    git: https://github.com/chrisdone/yesod-lucid
+    commit: de8b455a6efcc02b95d5f6363a29044e230dc75f
+  extra-dep: true
 extra-deps:
 - mime-0.4.0.2
