@@ -34,11 +34,11 @@ import qualified Data.Conduit.Network as Net hiding (appSource, appSink)
 import qualified Data.Conduit.Network.Timeout as Connector
 import           Data.Monoid
 import           Data.Pool
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
+import           System.IO
 
 --------------------------------------------------------------------------------
 -- Constants
@@ -46,7 +46,7 @@ import           Database.Persist.Sql.Types.Internal
 data DutaException
   = ClientQuitUnexpectedly
   | ClientTimeout
-  | FailedToParseInput
+  | FailedToParseInput CA.ParseError (Maybe ByteString)
   deriving (Typeable, Show)
 instance Exception DutaException
 
@@ -58,46 +58,43 @@ data Start m = Start
   }
 
 start :: Start (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
-start Start {..} =
-  withRunInIO
-    (\run ->
-       Net.runTCPServer
-         (Net.serverSettings startPort "*")
-         (\appData ->
-            run
-              (do let ip = T.pack (show (Net.appSockAddr appData))
-                  logInfo ("Got connection from " <> ip)
-                  catch
-                    (do withResource
-                          startPool
-                          (runReaderT
-                             (C.runConduit
-                                ((do reason <-
-                                       Connector.appSource
-                                         (Connector.defaultConnector appData)
-                                     case reason of
-                                       Connector.Finished ->
-                                         throwM ClientQuitUnexpectedly
-                                       Connector.ReadWriteTimeout ->
-                                         throwM ClientTimeout) .|
-                                 CL.mapM
-                                   (\x ->
-                                      x <$
-                                      logDebug (ip <> " <= " <> T.pack (show x))) .|
-                                 interaction
-                                   Interaction
-                                     { interactionHostname = startHostname
-                                     , interactionReply =
-                                         liftIO . run . makeReply appData
-                                     , interactionOnMessage = startOnMessage
-                                     })))
-                        logInfo ("Done, closing connection: " <> ip))
-                    (\case
-                       ClientQuitUnexpectedly ->
-                         logError (ip <> " quit unexpectedly.")
-                       ClientTimeout -> logWarn (ip <> " timed out.")
-                       FailedToParseInput ->
-                         logError (ip <> " failed to parse input.")))))
+start Start {..} = do
+  UnliftIO run <- askUnliftIO
+  liftIO
+    (do hSetBuffering stdout NoBuffering
+        Net.runTCPServer (Net.serverSettings startPort "*") (run . handler run))
+  where
+    handler run appData =
+      catch
+        (do logInfo (wrap "CONNECT")
+            withResource startPool (runReaderT conduit)
+            logInfo (wrap "SUCCESS"))
+        (\case
+           ClientQuitUnexpectedly -> logError (wrap "QUIT UNEXPECTEDLY")
+           ClientTimeout -> logWarn (wrap "TIMED OUT")
+           FailedToParseInput e inp ->
+             logError
+               (wrap
+                  ("PARSE ERROR: " <> T.pack (show e) <> "\n" <>
+                   T.pack (show inp))))
+      where
+        conduit = C.runConduit (source .| logger .| sink)
+          where
+            source = do
+              reason <- Connector.appSource (Connector.defaultConnector appData)
+              case reason of
+                Connector.Finished -> throwM ClientQuitUnexpectedly
+                Connector.ReadWriteTimeout -> throwM ClientTimeout
+            logger =
+              CL.mapM (\x -> x <$ logDebug (wrap "IN: " <> T.pack (show x)))
+            sink =
+              interaction
+                Interaction
+                  { interactionHostname = startHostname
+                  , interactionReply = liftIO . run . makeReply appData
+                  , interactionOnMessage = startOnMessage
+                  }
+        wrap s = T.pack (show (Net.appSockAddr appData)) <> ": " <> T.take 60 s
 
 makeReply :: (MonadIO m, MonadThrow m, MonadLogger m) => Net.AppData -> Reply -> m ()
 makeReply appData rep = do
@@ -108,8 +105,8 @@ makeReply appData rep = do
          (\x ->
             x <$
             logDebug
-              (T.pack (show (Net.appSockAddr appData)) <> " => " <>
-               T.pack (show x))) .|
+              (T.pack (show (Net.appSockAddr appData)) <> ": OUT: " <>
+               T.pack (take 60 (show x)))) .|
        Connector.appSink (Connector.defaultConnector appData))
   case reason of
     Connector.ReadWriteTimeout -> throwM ClientTimeout
@@ -122,52 +119,43 @@ data Interaction c m = Interaction
   }
 
 interaction ::
-     (MonadThrow m, MonadLogger m)
+     (MonadThrow m)
   => Interaction c m
   -> C.ConduitT ByteString c m ()
 interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
-  receive_ "HELO/EHLO" (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
+  receive_ (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
   interactionReply (Okay " OK")
-  from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
+  _from <- receive (Atto8.string "MAIL FROM:")
   interactionReply (Okay " OK")
-  to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
+  _to <- receive (Atto8.string "RCPT TO:")
   interactionReply (Okay " OK")
-  receive_ "DATA" (Atto8.string "DATA")
+  receive_ (Atto8.string "DATA")
   interactionReply StartMailInput
-  data' <- consume "<CLRF>.<CLRF> terminated data" dottedParser
+  data' <- consume dottedParser
   interactionReply (Okay " OK")
-  receive_ "QUIT" (Atto8.string "QUIT")
+  receive_ (Atto8.string "QUIT")
   interactionReply Closing
-  logInfo
-    ("Message from " <> T.decodeUtf8 from <> ", to " <> T.decodeUtf8 to <>
-     ", data: " <>
-     T.pack (show data'))
   lift (interactionOnMessage (parseMIMEMessage (T.decodeUtf8 data')))
 
-receive_ :: (MonadThrow m,MonadLogger m) => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
-receive_ l p = receive l p >> pure ()
+receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
+receive_ p = receive p >> pure ()
 
-receive :: (MonadThrow m,MonadLogger m) => Text -> Atto8.Parser a -> C.ConduitT ByteString c m a
-receive label p =
-  consume label (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n')
+receive :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m a
+receive p =
+  consume (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n')
 
-consume :: (MonadThrow m, MonadLogger m) => Text -> Atto8.Parser a2 -> C.ConduitT ByteString c m a2
-consume label p = do
+consume :: (MonadThrow m) => Atto8.Parser a2 -> C.ConduitT ByteString c m a2
+consume p = do
   r <- (CA.conduitParserEither p .| C.await)
   case r of
     Nothing -> do
-      logError ("Client quit unexpectedly while waiting for " <> label)
-      throwM ClientQuitUnexpectedly
+      throwM (ClientQuitUnexpectedly)
     Just result ->
       case result of
         Left err -> do
           bs <- C.await
-          logError
-            (label <> ": Failed to parse input: " <> T.pack (show (show err)) <>
-             ", input was: " <>
-             T.pack (show bs))
-          throwM FailedToParseInput
+          throwM (FailedToParseInput err bs)
         Right (_pos, v) -> pure v
 
 data Reply
