@@ -13,7 +13,6 @@ import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Time
 import Database.Persist.TH
-import Duta.Types.EmailAddress
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Message
@@ -24,20 +23,28 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Show
     deriving Eq
 
+  MultiPart
+    message MessageId
+    parent MultiPartId Maybe
+    contentType Text
+
   PlainTextPart
     message MessageId
+    parent MultiPartId Maybe
     content Text
     deriving Show
     deriving Eq
 
   HtmlPart
     message MessageId
+    parent MultiPartId Maybe
     content Text
     deriving Show
     deriving Eq
 
   BinaryPart
     message MessageId
+    parent MultiPartId Maybe
     contentType Text
     content ByteString
     deriving Show

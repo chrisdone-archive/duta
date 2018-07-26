@@ -39,27 +39,34 @@ insertModelMessage received value = do
          , messageTo = to
          , messageSubject = subject
          })
-  insertContent msgId value
-  pure ()
+  insertContent msgId Nothing value
 
 -- | Insert a message part for a given message.
 insertContent ::
      MonadIO m
   => Key Message
+  -> Maybe (Key MultiPart)
   -> MIME.MIMEValue
   -> ReaderT Persistent.SqlBackend m ()
-insertContent msgId value =
+insertContent msgId mparent value =
   case (MIME.mime_val_content value) of
-    MIME.Multi values -> mapM_ (insertContent msgId) values
+    MIME.Multi values -> do
+      parent <-
+        Persistent.insert
+          (MultiPart msgId mparent (MIME.showType (MIME.mime_val_type value)))
+      mapM_ (insertContent msgId (Just parent)) values
     MIME.Single text ->
       case MIME.mimeType (MIME.mime_val_type value) of
-        MIME.Text "plain" -> void (Persistent.insert (PlainTextPart msgId text))
-        MIME.Text "html" -> void (Persistent.insert (HtmlPart msgId text))
+        MIME.Text "plain" ->
+          void (Persistent.insert (PlainTextPart msgId mparent text))
+        MIME.Text "html" ->
+          void (Persistent.insert (HtmlPart msgId mparent text))
         _ ->
           void
             (Persistent.insert
                (BinaryPart
                   msgId
+                  mparent
                   (MIME.showType (MIME.mime_val_type value))
                   (T.encodeUtf8 text)))
 
