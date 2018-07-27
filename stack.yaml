@@ -8,5 +8,7 @@ packages:
     git: https://github.com/chrisdone/yesod-lucid
     commit: de8b455a6efcc02b95d5f6363a29044e230dc75f
   extra-dep: true
-extra-deps:
-- mime-0.4.0.2
+- location:
+    git: https://github.com/chrisdone/mime
+    commit: 8f3b9124abec95145b53849b48489129fe5c7368
+  extra-dep: true
