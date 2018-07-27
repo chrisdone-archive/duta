@@ -178,12 +178,17 @@ getThreadR threadId = do
                  p_
                    (do strong_ "To: "
                        toHtml (messageTo message))
-                 mapM_
-                   (\plainTextPart ->
-                      mapM_
-                        (p_ . toHtml)
-                        (T.lines (plainTextPartContent plainTextPart)))
-                   myParts
+                 div_
+                   [style_ "font-family: ubuntu mono, monospace"]
+                   (mapM_
+                      (\plainTextPart ->
+                         sequence_
+                           (intersperse
+                              (br_ [])
+                              (map
+                                 toHtml
+                                 (T.lines (plainTextPartContent plainTextPart)))))
+                      myParts)
                  where
                    myParts =
                      sortBy
@@ -194,15 +199,16 @@ getThreadR threadId = do
             in doctypehtml_
                  (do head_ (meta_ [charset_ "utf-8"])
                      body_
-                       (do pre_
+                       (do h1_ (toHtml (threadSubject thread))
+                           pre_
                              (toHtml
                                 (drawForest
                                    (fmap
                                       (fmap
-                                         ((\(n, _, _) -> T.unpack (messageFrom n)) .
+                                         ((\(n, _, _) ->
+                                             T.unpack (messageFrom n)) .
                                           v2n))
                                       forest)))
-                           h1_ (toHtml (threadSubject thread))
                            mapM_
                              (void . traverse displayMessage)
                              (fmap
