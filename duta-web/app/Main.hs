@@ -32,7 +32,10 @@ import           Yesod.Lucid
 --------------------------------------------------------------------------------
 -- App
 
-data App = App (Pool SqlBackend)
+data App = App
+  { appPool :: Pool SqlBackend
+  , appRoot :: Text
+  }
 
 mkYesod "App" [parseRoutes|
   / HomeR GET
@@ -40,11 +43,12 @@ mkYesod "App" [parseRoutes|
 |]
 
 instance Yesod App where
+  approot = ApprootMaster appRoot
   maximumContentLength _ _ = Just (1024 * 20)
   authRoute _ = Just $ AuthR LoginR
-  -- isAuthorized HomeR _ = do
-  --   mu <- maybeAuthId
-  --   return (maybe AuthenticationRequired (const Authorized) mu)
+  isAuthorized HomeR _ = do
+    mu <- maybeAuthId
+    return (maybe AuthenticationRequired (const Authorized) mu)
   isAuthorized _ _ = pure Authorized
 
 instance RenderMessage App FormMessage where
@@ -53,13 +57,13 @@ instance RenderMessage App FormMessage where
 instance YesodPersist App where
   type YesodPersistBackend App = SqlBackend
   runDB act = do
-    App pool <- getYesod
+    App pool _ <- getYesod
     runSqlPool act pool
 
 instance YesodAuth App where
   type AuthId App = Text
   loginDest _ = HomeR
-  logoutDest _ = HomeR
+  logoutDest _ = AuthR LoginR
   authPlugins _ = [authHardcoded]
   authenticate Creds {..} =
     pure
@@ -112,18 +116,21 @@ getHomeR = do
 
 main :: IO ()
 main = do
-  ((port, connstr, connections), ()) <-
+  ((port, connstr, root, connections), ()) <-
     simpleOptions
       "0.0.0"
       "duta-web"
       "Webmail"
-      ((,,) <$>
+      ((,,,) <$>
        option
          auto
          (metavar "PORT" <> help "Port to listen on" <> short 'p' <> long "port") <*>
        strOption
          (metavar "CONNSTR" <> help "PostgreSQL connection string" <>
           long "connstr") <*>
+       strOption
+         (metavar "ROOT" <> help "App root e.g. https://foo.com (no trailing slash)" <>
+          long "approot") <*>
        (option
           auto
           (metavar "COUNT" <> help "Max database connections" <>
@@ -138,4 +145,4 @@ main = do
           withResource
             pool
             (runReaderT (runMigration Duta.Types.Model.migrateAll))
-          liftIO (warp port (App pool))))
+          liftIO (warp port (App pool root))))
