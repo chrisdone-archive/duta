@@ -9,7 +9,7 @@ import           Control.Monad.Reader
 import           Data.Monoid
 import           Data.Pool
 import           Data.Time
-import           Database.Persist.Sqlite
+import           Database.Persist.Postgresql
 import           Duta.Model
 import           Duta.SMTP.Receiver
 import qualified Duta.Types.Model
@@ -17,7 +17,7 @@ import           Options.Applicative.Simple
 
 main :: IO ()
 main = do
-  ((host, port, dbfile, connections), ()) <-
+  ((host, port, connstr, connections), ()) <-
     simpleOptions
       "0.0.0"
       "duta-smtp-receiver"
@@ -29,7 +29,8 @@ main = do
          auto
          (metavar "PORT" <> help "Port to listen on" <> short 'p' <> long "port") <*>
        strOption
-         (metavar "FILE" <> help "SQLite database file" <> long "sqlite-file") <*>
+         (metavar "CONNSTR" <> help "PostgreSQL connection string" <>
+          long "connstr") <*>
        (option
           auto
           (metavar "COUNT" <> help "Max database connections" <>
@@ -37,18 +38,20 @@ main = do
            value 1)))
       empty
   runStdoutLoggingT
-    (withSqlitePoolInfo
-       (mkSqliteConnectionInfo dbfile)
+    (withPostgresqlPool
+       connstr
        connections
-       (\pool ->
-          do withResource pool (runReaderT (runMigration Duta.Types.Model.migrateAll))
-             start
-               Start
-                 { startHostname = host
-                 , startPort = port
-                 , startOnMessage =
-                     \msg -> do
-                       now <- liftIO getCurrentTime
-                       insertModelMessage now msg
-                 , startPool = pool
-                 }))
+       (\pool -> do
+          withResource
+            pool
+            (runReaderT (runMigration Duta.Types.Model.migrateAll))
+          start
+            Start
+              { startHostname = host
+              , startPort = port
+              , startOnMessage =
+                  \msg -> do
+                    now <- liftIO getCurrentTime
+                    insertModelMessage now msg
+              , startPool = pool
+              }))

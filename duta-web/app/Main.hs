@@ -122,7 +122,7 @@ main = do
          auto
          (metavar "PORT" <> help "Port to listen on" <> short 'p' <> long "port") <*>
        strOption
-         (metavar "FILE" <> help "PostgreSQL connection string" <>
+         (metavar "CONNSTR" <> help "PostgreSQL connection string" <>
           long "connstr") <*>
        (option
           auto

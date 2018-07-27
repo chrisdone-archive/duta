@@ -38,7 +38,6 @@ library
                        time,
                        old-time,
                        persistent,
-                       persistent-sqlite,
                        resource-pool,
                        mime
   default-language:    Haskell2010
@@ -53,6 +52,7 @@ executable duta-smtp-receiver
                      , optparse-simple
                      , time
                      , persistent-sqlite
+                     , persistent-postgresql
                      , duta-model
                      , resource-pool
                      , mtl
