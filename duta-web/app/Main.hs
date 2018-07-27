@@ -15,7 +15,6 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.List
-import           Data.Maybe
 import           Data.Monoid
 import           Data.Ord
 import           Data.Pool
@@ -25,6 +24,7 @@ import           Database.Persist.Postgresql
 import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
+import           System.Environment
 import           Yesod hiding (toHtml)
 import           Yesod.Auth
 import           Yesod.Auth.Hardcoded
@@ -34,9 +34,15 @@ import           Yesod.Lucid
 --------------------------------------------------------------------------------
 -- App
 
+data SiteManager = SiteManager
+  { manUserName :: Text
+  , manPassWord :: Text
+  } deriving (Show, Eq)
+
 data App = App
   { appPool :: Pool SqlBackend
   , appRoot :: Text
+  , appSiteManager :: SiteManager
   }
 
 mkYesod "App" [parseRoutes|
@@ -60,7 +66,7 @@ instance RenderMessage App FormMessage where
 instance YesodPersist App where
   type YesodPersistBackend App = SqlBackend
   runDB act = do
-    App pool _ <- getYesod
+    App pool _ _ <- getYesod
     runSqlPool act pool
 
 instance YesodAuth App where
@@ -68,38 +74,31 @@ instance YesodAuth App where
   loginDest _ = InboxR
   logoutDest _ = AuthR LoginR
   authPlugins _ = [authHardcoded]
-  authenticate Creds {..} =
+  authenticate Creds {..} = do
+    app <- getYesod
     pure
       (case credsPlugin of
          "hardcoded" ->
-           case lookupUser credsIdent of
-             Nothing -> UserError InvalidLogin
-             Just m -> Authenticated (manUserName m)
+           case credsIdent == manUserName (appSiteManager app) of
+             True -> Authenticated credsIdent
+             False -> UserError InvalidLogin
          _ -> ServerError "Invalid auth plugin.")
 
 instance YesodAuthHardcoded App where
-  validatePassword u = return . validPassword
-    where validPassword p =
-            isJust (find (\m -> manUserName m == u && manPassWord m == p) siteManagers)
-  doesUserNameExist  = return . isJust . lookupUser
+  validatePassword u p = do
+    siteManager <- fmap appSiteManager getYesod
+    pure (SiteManager u p == siteManager)
+  doesUserNameExist u = do
+    siteManager <- fmap appSiteManager getYesod
+    pure (u == manUserName siteManager)
 
 instance YesodAuthPersist App where
   type AuthEntity App = SiteManager
-  getAuthEntity = pure . lookupUser
-
-lookupUser :: Text -> Maybe SiteManager
-lookupUser username = find (\m -> manUserName m == username) siteManagers
-
---------------------------------------------------------------------------------
--- Accounts
-
-data SiteManager = SiteManager
-  { manUserName :: Text
-  , manPassWord :: Text }
-  deriving Show
-
-siteManagers :: [SiteManager]
-siteManagers = [SiteManager "chris" "donkey"]
+  getAuthEntity u = do
+    siteManager <- fmap appSiteManager getYesod
+    if manUserName siteManager == u
+      then pure (Just siteManager)
+      else pure Nothing
 
 --------------------------------------------------------------------------------
 -- Inbox page
@@ -188,7 +187,8 @@ main = do
          (metavar "CONNSTR" <> help "PostgreSQL connection string" <>
           long "connstr") <*>
        strOption
-         (metavar "ROOT" <> help "App root e.g. https://foo.com (no trailing slash)" <>
+         (metavar "ROOT" <>
+          help "App root e.g. https://foo.com (no trailing slash)" <>
           long "approot") <*>
        (option
           auto
@@ -196,6 +196,8 @@ main = do
            long "max-db-connections" <>
            value 1)))
       empty
+  manager <-
+    SiteManager <$> fmap T.pack (getEnv "USER") <*> fmap T.pack (getEnv "PASS")
   runStdoutLoggingT
     (withPostgresqlPool
        connstr
@@ -204,4 +206,4 @@ main = do
           withResource
             pool
             (runReaderT (runMigration Duta.Types.Model.migrateAll))
-          liftIO (warp port (App pool root))))
+          liftIO (warp port (App pool root manager))))
