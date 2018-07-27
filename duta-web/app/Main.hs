@@ -110,7 +110,7 @@ getInboxR = do
     Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
     Just {} -> do
       threads <-
-        runDB (selectList [ThreadArchived ==. False] [Asc ThreadUpdated])
+        runDB (selectList [ThreadArchived ==. False] [Desc ThreadUpdated])
       lucid
         (\url -> do
            p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
