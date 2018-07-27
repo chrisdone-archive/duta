@@ -11,6 +11,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Control.Monad.State
+import qualified Data.ByteString.Char8 as S8
 import           Data.List
 import           Data.Maybe
 import           Data.Text (Text)
@@ -130,7 +131,7 @@ insertContent msgId mparent value =
                      { plainTextPartOrdering = ordering
                      , plainTextPartMessage = msgId
                      , plainTextPartParent = mparent
-                     , plainTextPartContent = text
+                     , plainTextPartContent = T.decodeUtf8 (S8.pack (T.unpack text))
                      }))
            MIME.Text "html" ->
              void
