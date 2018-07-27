@@ -93,7 +93,7 @@ getThreadId subject value =
              , threadCreated = now
              , threadUpdated = now
              , threadArchived = False
-             , threadMessages = 1
+             , threadMessages = 0
              })
       pure (threadId, Nothing)
 
