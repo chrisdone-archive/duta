@@ -17,8 +17,19 @@ import Database.Persist.TH
 import Duta.Types.Order
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+  Thread
+    subject Text
+    created UTCTime
+    updated UTCTime
+    archived Bool
+    deriving Show
+    deriving Eq
+
   Message
     received UTCTime
+    thread ThreadId
+    parent MessageId Maybe
+    identifier Text Maybe
     from Text
     to Text
     subject Text

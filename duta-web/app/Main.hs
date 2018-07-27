@@ -17,13 +17,15 @@ import           Control.Monad.Reader
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Ord
 import           Data.Pool
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Database.Persist.Postgresql
-import qualified Duta.Types.Model
+import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
-import           Yesod
+import           Yesod hiding (toHtml)
 import           Yesod.Auth
 import           Yesod.Auth.Hardcoded
 import           Yesod.Auth.Message (AuthMessage(InvalidLogin))
@@ -38,18 +40,19 @@ data App = App
   }
 
 mkYesod "App" [parseRoutes|
-  / HomeR GET
+  / InboxR GET
   /auth AuthR Auth getAuth
+  /thread/#ThreadId ThreadR GET
 |]
 
 instance Yesod App where
   approot = ApprootMaster appRoot
   maximumContentLength _ _ = Just (1024 * 20)
   authRoute _ = Just $ AuthR LoginR
-  isAuthorized HomeR _ = do
+  isAuthorized (AuthR _) _ = return Authorized
+  isAuthorized _ _ = do
     mu <- maybeAuthId
     return (maybe AuthenticationRequired (const Authorized) mu)
-  isAuthorized _ _ = pure Authorized
 
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
@@ -62,7 +65,7 @@ instance YesodPersist App where
 
 instance YesodAuth App where
   type AuthId App = Text
-  loginDest _ = HomeR
+  loginDest _ = InboxR
   logoutDest _ = AuthR LoginR
   authPlugins _ = [authHardcoded]
   authenticate Creds {..} =
@@ -99,17 +102,73 @@ siteManagers :: [SiteManager]
 siteManagers = [SiteManager "chris" "donkey"]
 
 --------------------------------------------------------------------------------
--- Raw content
+-- Inbox page
 
-getHomeR :: Handler LucidHtml
-getHomeR = do
+getInboxR :: Handler LucidHtml
+getInboxR = do
   mu <- maybeAuthId
-  lucid
-    (\url -> do
-       case mu of
-         Nothing -> p_ (a_ [href_ (url (AuthR LoginR))] "Login")
-         Just {} -> p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
-       p_ (Lucid.toHtml (show mu)))
+  case mu of
+    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
+    Just {} -> do
+      threads <-
+        runDB (selectList [ThreadArchived ==. False] [Asc ThreadUpdated])
+      lucid
+        (\url -> do
+           p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
+           h1_ "Inbox"
+           mapM_
+             (\(Entity threadId thread) -> do
+                p_
+                  (do a_
+                        [href_ (url (ThreadR threadId))]
+                        (toHtml (threadSubject thread))
+                      br_ []
+                      em_ (toHtml (show (threadUpdated thread)))))
+             threads)
+
+--------------------------------------------------------------------------------
+-- Thread page
+
+getThreadR :: ThreadId -> Handler LucidHtml
+getThreadR threadId = do
+  (mthread, messages, plainParts) <-
+    runDB
+      (do mthread <- get threadId
+          messages <-
+            selectList [MessageThread ==. threadId] [Asc MessageReceived]
+          plainParts <-
+            fmap
+              (map entityVal)
+              (selectList [PlainTextPartMessage <-. map entityKey messages] [])
+          pure (mthread, messages, plainParts))
+  case mthread of
+    Nothing -> notFound
+    Just thread ->
+      lucid
+        (\_url ->
+           let displayMessage (Entity messageId message) = do
+                 p_ (em_ (toHtml (show (messageReceived message))))
+                 p_
+                   (do strong_ "From: "
+                       toHtml (messageFrom message))
+                 p_
+                   (do strong_ "To: "
+                       toHtml (messageTo message))
+                 mapM_
+                   (\plainTextPart ->
+                      mapM_
+                        (p_ . toHtml)
+                        (T.lines (plainTextPartContent plainTextPart)))
+                   myParts
+                 where
+                   myParts =
+                     sortBy
+                       (comparing plainTextPartOrdering)
+                       (filter
+                          ((== messageId) . plainTextPartMessage)
+                          plainParts)
+            in do h1_ (toHtml (threadSubject thread))
+                  mapM_ displayMessage messages)
 
 --------------------------------------------------------------------------------
 -- Main entry point

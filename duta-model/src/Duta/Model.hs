@@ -12,10 +12,13 @@ import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.List
+import           Data.Maybe
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
+import           Database.Persist ((<-.), (=.))
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Model
 import           Duta.Types.Order
@@ -24,6 +27,7 @@ data ModelError = MissingHeader Text
   deriving (Show, Typeable)
 instance Exception ModelError
 
+-- | Insert a message, mapping it to any existing thread.
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => UTCTime
@@ -33,6 +37,7 @@ insertModelMessage received value = do
   from <- lookupHeader "from" value
   to <- lookupHeader "to" value
   subject <- lookupHeader "subject" value
+  (threadId, mparentId) <- getThreadId subject value
   msgId <-
     Persistent.insert
       (Message
@@ -40,8 +45,56 @@ insertModelMessage received value = do
          , messageFrom = from
          , messageTo = to
          , messageSubject = subject
+         , messageThread = threadId
+         , messageParent = mparentId
+         , messageIdentifier = lookupHeader "message-id" value
          })
+  now <- liftIO getCurrentTime
+  Persistent.update threadId [ThreadUpdated =. now]
   evalStateT (insertContent msgId Nothing value) (Order 0)
+
+-- | Figure out the thread that a message belongs to.
+getThreadId ::
+     MonadIO m
+  => Text
+  -> MIME.MIMEValue
+  -> ReaderT Persistent.SqlBackend m (ThreadId, Maybe MessageId)
+getThreadId subject value =
+  case lookupHeader "references" value of
+    Nothing -> newThread
+    Just ref -> do
+      let messageIdsParentFirst =
+            maybe [] pure (lookupHeader "in-reply-to" value) ++
+            reverse (T.words ref)
+      matching <-
+        Persistent.selectList
+          [MessageIdentifier <-. map Just messageIdsParentFirst]
+          []
+      let mparent =
+            listToMaybe
+              (mapMaybe
+                 (\ident ->
+                    find
+                      ((== Just ident) .
+                       messageIdentifier . Persistent.entityVal)
+                      matching)
+                 messageIdsParentFirst)
+      case mparent of
+        Just (Persistent.Entity messageId m) ->
+          pure (messageThread m, Just messageId)
+        Nothing -> newThread
+  where
+    newThread = do
+      now <- liftIO getCurrentTime
+      threadId <-
+        Persistent.insert
+          (Thread
+             { threadSubject = subject
+             , threadCreated = now
+             , threadUpdated = now
+             , threadArchived = False
+             })
+      pure (threadId, Nothing)
 
 -- | Insert a message part for a given message.
 insertContent ::
