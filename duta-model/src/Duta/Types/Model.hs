@@ -22,6 +22,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     created UTCTime
     updated UTCTime
     archived Bool
+    messages Int
     deriving Show
     deriving Eq
 

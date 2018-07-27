@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
-import           Database.Persist ((<-.), (=.))
+import           Database.Persist ((<-.), (=.), (+=.))
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Model
 import           Duta.Types.Order
@@ -50,7 +50,7 @@ insertModelMessage received value = do
          , messageIdentifier = lookupHeader "message-id" value
          })
   now <- liftIO getCurrentTime
-  Persistent.update threadId [ThreadUpdated =. now]
+  Persistent.update threadId [ThreadUpdated =. now, ThreadMessages +=. 1]
   evalStateT (insertContent msgId Nothing value) (Order 0)
 
 -- | Figure out the thread that a message belongs to.
@@ -93,6 +93,7 @@ getThreadId subject value =
              , threadCreated = now
              , threadUpdated = now
              , threadArchived = False
+             , threadMessages = 1
              })
       pure (threadId, Nothing)
 

@@ -118,7 +118,10 @@ getInboxR = do
            mapM_
              (\(Entity threadId thread) -> do
                 p_
-                  (do a_
+                  (do "("
+                      toHtml (show (threadMessages thread))
+                      ") "
+                      a_
                         [href_ (url (ThreadR threadId))]
                         (toHtml (threadSubject thread))
                       br_ []
