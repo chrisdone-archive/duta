@@ -14,12 +14,15 @@ import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
+import           Data.Graph
 import           Data.List
+import           Data.Maybe
 import           Data.Monoid
 import           Data.Ord
 import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Tree
 import           Database.Persist.Postgresql
 import           Duta.Types.Model
 import           Lucid
@@ -112,21 +115,24 @@ getInboxR = do
       threads <-
         runDB (selectList [ThreadArchived ==. False] [Desc ThreadUpdated])
       lucid
-        (\url -> do
-           p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
-           h1_ "Inbox"
-           mapM_
-             (\(Entity threadId thread) -> do
-                p_
-                  (do "("
-                      toHtml (show (threadMessages thread))
-                      ") "
-                      a_
-                        [href_ (url (ThreadR threadId))]
-                        (toHtml (threadSubject thread))
-                      br_ []
-                      em_ (toHtml (show (threadUpdated thread)))))
-             threads)
+        (\url ->
+           doctypehtml_
+             (do head_ (meta_ [charset_ "utf-8"])
+                 body_
+                   (do p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
+                       h1_ "Inbox"
+                       mapM_
+                         (\(Entity threadId thread) -> do
+                            p_
+                              (do "("
+                                  toHtml (show (threadMessages thread))
+                                  ") "
+                                  a_
+                                    [href_ (url (ThreadR threadId))]
+                                    (toHtml (threadSubject thread))
+                                  br_ []
+                                  em_ (toHtml (show (threadUpdated thread)))))
+                         threads)))
 
 --------------------------------------------------------------------------------
 -- Thread page
@@ -143,6 +149,22 @@ getThreadR threadId = do
               (map entityVal)
               (selectList [PlainTextPartMessage <-. map entityKey messages] [])
           pure (mthread, messages, plainParts))
+  let (g, v2n, k2v) =
+        graphFromEdges
+          (map
+             (\(Entity mid m) ->
+                ( m
+                , mid
+                , map
+                    entityKey
+                    (filter ((== Just mid) . messageParent . entityVal) messages)))
+             messages)
+      forest =
+        dfs
+          g
+          (mapMaybe
+             (k2v . entityKey)
+             (filter (isNothing . messageParent . entityVal) messages))
   case mthread of
     Nothing -> notFound
     Just thread ->
@@ -169,8 +191,26 @@ getThreadR threadId = do
                        (filter
                           ((== messageId) . plainTextPartMessage)
                           plainParts)
-            in do h1_ (toHtml (threadSubject thread))
-                  mapM_ displayMessage messages)
+            in doctypehtml_
+                 (do head_ (meta_ [charset_ "utf-8"])
+                     body_
+                       (do pre_
+                             (toHtml
+                                (drawForest
+                                   (fmap
+                                      (fmap
+                                         ((\(n, _, _) -> T.unpack (messageFrom n)) .
+                                          v2n))
+                                      forest)))
+                           h1_ (toHtml (threadSubject thread))
+                           mapM_
+                             (void . traverse displayMessage)
+                             (fmap
+                                (fmap
+                                   (\v ->
+                                      let (n, k, _) = v2n v
+                                       in Entity k n))
+                                forest))))
 
 --------------------------------------------------------------------------------
 -- Main entry point

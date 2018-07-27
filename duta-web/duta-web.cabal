@@ -31,4 +31,5 @@ executable duta-web
                      , bytestring
                      , yesod-lucid
                      , yesod-auth
+                     , containers
   default-language:    Haskell2010
