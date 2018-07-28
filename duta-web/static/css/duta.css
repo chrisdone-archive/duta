@@ -1,0 +1,68 @@
+body {
+  background: #f0f0f0;
+  margin-bottom: 5em;
+}
+a {
+  color: #0877d2;
+  text-decoration: none;
+}
+a:visited {
+  color: #1a6e8e;
+}
+.inbox,
+.thread {
+  max-width: 60em;
+  margin-left: auto;
+  margin-right: auto;
+}
+.message {
+  background: #fff;
+  padding: 10px;
+  border: 0.5px solid #ddd;
+  border-radius: 1px;
+  box-shadow:
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee;
+}
+.message + .message {
+  margin-top: 1em;
+}
+.message-timestamp {
+  float: right;
+  color: #888;
+}
+.message-header + .message-body {
+  margin-top: 1em;
+}
+.thread-preview {
+  background: #fff;
+  padding: 10px;
+  border: 0.5px solid #ddd;
+  border-radius: 1px;
+  box-shadow:
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee,
+  -1px 1px #eee;
+}
+.thread-preview + .thread-preview {
+  margin-top: 0.25em;
+}
+.messages-count {
+  float: right;
+  margin-right: 1em;
+  color: #888;
+}
+.text-quote {
+  color: #666;
+}
+.topnav {
+
+}
+.menu-logout {
+  float: right;
+}

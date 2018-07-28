@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -14,6 +16,7 @@ import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
+import           Data.Function
 import           Data.Graph
 import           Data.List
 import           Data.Maybe
@@ -22,17 +25,30 @@ import           Data.Ord
 import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Time
 import           Data.Tree
 import           Database.Persist.Postgresql
 import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
 import           System.Environment
-import           Yesod hiding (toHtml)
+import           Yesod hiding (toHtml, Html)
 import           Yesod.Auth
 import           Yesod.Auth.Hardcoded
 import           Yesod.Auth.Message (AuthMessage(InvalidLogin))
+import           Yesod.EmbeddedStatic
 import           Yesod.Lucid
+
+--------------------------------------------------------------------------------
+-- Constants and settings
+
+-- | Dev flag.
+development :: Bool
+#ifdef DEVELOPMENT
+development = True
+#else
+development = False
+#endif
 
 --------------------------------------------------------------------------------
 -- App
@@ -46,15 +62,20 @@ data App = App
   { appPool :: Pool SqlBackend
   , appRoot :: Text
   , appSiteManager :: SiteManager
+  , appStatic :: EmbeddedStatic
   }
 
+mkEmbeddedStatic True "embeddedStatic" [embedDir "static"]
+
 mkYesod "App" [parseRoutes|
+  /static StaticR EmbeddedStatic appStatic
   / InboxR GET
   /auth AuthR Auth getAuth
   /thread/#ThreadId ThreadR GET
 |]
 
 instance Yesod App where
+  addStaticContent = embedStaticContent appStatic StaticR Right
   approot = ApprootMaster appRoot
   maximumContentLength _ _ = Just (1024 * 20)
   authRoute _ = Just $ AuthR LoginR
@@ -69,7 +90,7 @@ instance RenderMessage App FormMessage where
 instance YesodPersist App where
   type YesodPersistBackend App = SqlBackend
   runDB act = do
-    App pool _ _ <- getYesod
+    App {appPool = pool} <- getYesod
     runSqlPool act pool
 
 instance YesodAuth App where
@@ -117,22 +138,34 @@ getInboxR = do
       lucid
         (\url ->
            doctypehtml_
-             (do head_ (meta_ [charset_ "utf-8"])
+             (do head_
+                   (do meta_ [charset_ "utf-8"]
+                       link_
+                         [ rel_ "stylesheet"
+                         , type_ "text/css"
+                         , href_ (url (StaticR css_duta_css))
+                         ])
                  body_
-                   (do p_ (a_ [href_ (url (AuthR LogoutR))] "Logout")
-                       h1_ "Inbox"
-                       mapM_
-                         (\(Entity threadId thread) -> do
-                            p_
-                              (do "("
-                                  toHtml (show (threadMessages thread))
-                                  ") "
-                                  a_
-                                    [href_ (url (ThreadR threadId))]
-                                    (toHtml (threadSubject thread))
-                                  br_ []
-                                  em_ (toHtml (show (threadUpdated thread)))))
-                         threads)))
+                   (div_
+                      [class_ "inbox"]
+                      (do topnav_ url
+                          h1_ "Inbox"
+                          mapM_
+                            (\(Entity threadId thread) -> do
+                               div_
+                                 [class_ "thread-preview"]
+                                 (do timestamp_ (threadUpdated thread)
+                                     span_
+                                       [class_ "messages-count"]
+                                       (do "("
+                                           toHtml (show (threadMessages thread))
+                                           ")")
+                                     a_
+                                       [ class_ "thread-preview-link"
+                                       , href_ (url (ThreadR threadId))
+                                       ]
+                                       (toHtml (threadSubject thread))))
+                            threads))))
 
 --------------------------------------------------------------------------------
 -- Thread page
@@ -169,26 +202,42 @@ getThreadR threadId = do
     Nothing -> notFound
     Just thread ->
       lucid
-        (\_url ->
-           let displayMessage (Entity messageId message) = do
-                 p_ (em_ (toHtml (show (messageReceived message))))
-                 p_
-                   (do strong_ "From: "
-                       toHtml (messageFrom message))
-                 p_
-                   (do strong_ "To: "
-                       toHtml (messageTo message))
+        (\url ->
+           let displayMessage (Entity messageId message) =
                  div_
-                   [style_ "font-family: ubuntu mono, monospace"]
-                   (mapM_
-                      (\plainTextPart ->
-                         sequence_
-                           (intersperse
-                              (br_ [])
-                              (map
-                                 toHtml
-                                 (T.lines (plainTextPartContent plainTextPart)))))
-                      myParts)
+                   [class_ "message"]
+                   (do div_
+                         [class_ "message-header"]
+                         (do timestamp_ (messageReceived message)
+                             div_
+                               (do strong_ "From: "
+                                   toHtml (messageFrom message))
+                             div_
+                               (do strong_ "To: "
+                                   toHtml (messageTo message)))
+                       div_
+                         [class_ "message-body"]
+                         (mapM_
+                            (\plainTextPart ->
+                               div_
+                                 [class_ "plain-text-part"]
+                                 (mapM_
+                                    (\ls ->
+                                       div_
+                                         [ class_
+                                             (if any (T.isPrefixOf ">") ls
+                                                then "text-quote"
+                                                else "text-plain")
+                                         ]
+                                         (sequence_
+                                            (intersperse
+                                               (br_ [])
+                                               (map toHtml ls))))
+                                    (groupBy
+                                       (on (==) (T.isPrefixOf ">"))
+                                       (T.lines
+                                          (plainTextPartContent plainTextPart)))))
+                            myParts))
                  where
                    myParts =
                      sortBy
@@ -197,26 +246,35 @@ getThreadR threadId = do
                           ((== messageId) . plainTextPartMessage)
                           plainParts)
             in doctypehtml_
-                 (do head_ (meta_ [charset_ "utf-8"])
+                 (do head_
+                       (do meta_ [charset_ "utf-8"]
+                           link_
+                             [ rel_ "stylesheet"
+                             , type_ "text/css"
+                             , href_ (url (StaticR css_duta_css))
+                             ])
                      body_
-                       (do h1_ (toHtml (threadSubject thread))
-                           pre_
-                             (toHtml
-                                (drawForest
-                                   (fmap
+                       (div_
+                          [class_ "thread"]
+                          (do topnav_ url
+                              h1_ (toHtml (threadSubject thread))
+                              pre_
+                                (toHtml
+                                   (drawForest
                                       (fmap
-                                         ((\(n, _, _) ->
-                                             T.unpack (messageFrom n)) .
-                                          v2n))
-                                      forest)))
-                           mapM_
-                             (void . traverse displayMessage)
-                             (fmap
+                                         (fmap
+                                            ((\(n, _, _) ->
+                                                T.unpack (messageFrom n)) .
+                                             v2n))
+                                         forest)))
+                              mapM_
+                                (void . traverse displayMessage)
                                 (fmap
-                                   (\v ->
-                                      let (n, k, _) = v2n v
-                                       in Entity k n))
-                                forest))))
+                                   (fmap
+                                      (\v ->
+                                         let (n, k, _) = v2n v
+                                          in Entity k n))
+                                   forest)))))
 
 --------------------------------------------------------------------------------
 -- Main entry point
@@ -255,4 +313,16 @@ main = do
           withResource
             pool
             (runReaderT (runMigration Duta.Types.Model.migrateAll))
-          liftIO (warp port (App pool root manager))))
+          liftIO (warp port (App pool root manager embeddedStatic))))
+
+timestamp_ :: UTCTime -> Html ()
+timestamp_ t =
+  div_
+    [class_ "message-timestamp"]
+    (em_ (toHtml (formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" t)))
+
+topnav_ :: (Route App -> Text) -> Html ()
+topnav_ url =
+  div_
+    [class_ "menu"]
+    (a_ [class_ "menu-logout", href_ (url (AuthR LogoutR))] "Logout")
