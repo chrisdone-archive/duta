@@ -137,12 +137,26 @@ getInboxR = do
           (do threads <-
                 E.select
                   (E.from
-                     (\(thread, threadTag, tag) -> do
+                     (\thread -> do
                         E.where_
-                          ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
-                           (threadTag E.^. ThreadTagThread E.==. thread E.^.
-                            ThreadId) E.&&.
-                           (tag E.^. TagLabel E.==. E.val Inbox))
+                          ((thread E.^. ThreadId `E.notIn`
+                            E.subList_select
+                              (E.from
+                                 (\(threadTag, tag) -> do
+                                    E.where_
+                                      ((threadTag E.^. ThreadTagTag E.==. tag E.^.
+                                        TagId) E.&&.
+                                       (tag E.^. TagLabel E.==. E.val Deleted))
+                                    pure (threadTag E.^. ThreadTagThread)))) E.&&.
+                           (thread E.^. ThreadId `E.in_`
+                            E.subList_select
+                              (E.from
+                                 (\(threadTag, tag) -> do
+                                    E.where_
+                                      ((threadTag E.^. ThreadTagTag E.==. tag E.^.
+                                        TagId) E.&&.
+                                       (tag E.^. TagLabel E.==. E.val Inbox))
+                                    pure (threadTag E.^. ThreadTagThread)))))
                         E.orderBy [E.desc (thread E.^. ThreadUpdated)]
                         pure thread))
               threadsLabels <-
@@ -204,7 +218,7 @@ getAllR = do
                                 (\(threadTag, tag) -> do
                                    E.where_
                                      (threadTag E.^. ThreadTagTag E.==. tag E.^.
-                                      TagId)
+                                      TagId E.&&. tag E.^. TagLabel E.==. E.val Deleted)
                                    pure (threadTag E.^. ThreadTagThread))))
                         E.orderBy [E.desc (thread E.^. ThreadUpdated)]
                         E.limit 30
@@ -389,24 +403,59 @@ getThreadR threadId = do
                           [class_ "thread"]
                           (do topnav_ url
                               h1_ (toHtml (threadSubject thread))
-                              p_ [class_ "thread-actions"]
+                              p_
+                                [class_ "thread-actions"]
                                 (do a_ [href_ (url InboxR)] "Back to Inbox"
-                                    if elem Inbox (map (tagLabel . entityVal . snd) labels)
-                                       then a_
-                                              [ href_
-                                                  (url (RemoveLabelR threadId Inbox))
-                                              ]
-                                              "Archive"
-                                       else a_
-                                              [ href_
-                                                  (url (ApplyLabelR threadId Inbox))
-                                              ]
-                                              "Move to Inbox"
-                                    a_
-                                      [ href_
-                                          (url (ApplyLabelR threadId Unread))
-                                      ]
-                                      "Mark unread")
+                                    let labels' =
+                                          map
+                                            (tagLabel . entityVal . snd)
+                                            labels
+                                    if elem Inbox labels'
+                                      then a_
+                                             [ href_
+                                                 (url
+                                                    (RemoveLabelR threadId Inbox))
+                                             ]
+                                             "Archive"
+                                      else a_
+                                             [ href_
+                                                 (url
+                                                    (ApplyLabelR threadId Inbox))
+                                             ]
+                                             "Move to Inbox"
+                                    unless
+                                      (elem Unread labels')
+                                      (a_
+                                         [ href_
+                                             (url (ApplyLabelR threadId Unread))
+                                         ]
+                                         "Mark unread")
+                                    if elem Muted labels'
+                                      then a_
+                                             [ href_
+                                                 (url
+                                                    (RemoveLabelR threadId Muted))
+                                             ]
+                                             "Unmute"
+                                      else a_
+                                             [ href_
+                                                 (url
+                                                    (ApplyLabelR threadId Muted))
+                                             ]
+                                             "Mute"
+                                    if elem Deleted labels'
+                                      then a_
+                                             [ href_
+                                                 (url
+                                                    (RemoveLabelR threadId Deleted))
+                                             ]
+                                             "Undelete"
+                                      else a_
+                                             [ href_
+                                                 (url
+                                                    (ApplyLabelR threadId Deleted))
+                                             ]
+                                             "Delete")
                               void
                                 (displayForest
                                    displayMessage
