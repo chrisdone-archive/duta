@@ -14,6 +14,7 @@ import           Control.Monad.State
 import qualified Data.ByteString.Char8 as S8
 import           Data.List
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -105,7 +106,7 @@ getThreadId subject value =
 
 -- | Insert a message part for a given message.
 insertContent ::
-     MonadIO m
+     (MonadIO m, MonadLogger m)
   => Key Message
   -> Maybe (Key MultiPart)
   -> MIME.MIMEValue
@@ -129,14 +130,23 @@ insertContent msgId mparent value =
       ordering <- getOrder
       lift
         (case MIME.mimeType (MIME.mime_val_type value) of
-           MIME.Text "plain" ->
+           MIME.Text "plain" -> do
+             text' <-
+               case T.decodeUtf8' (S8.pack (T.unpack text)) of
+                 Left e -> do
+                   logError
+                     ("Unable to parse string: " <> T.pack (show e) <>
+                      ", string was: " <>
+                      T.pack (show text))
+                   pure text
+                 Right t -> pure t
              void
                (Persistent.insert
                   (PlainTextPart
                      { plainTextPartOrdering = ordering
                      , plainTextPartMessage = msgId
                      , plainTextPartParent = mparent
-                     , plainTextPartContent = T.decodeUtf8 (S8.pack (T.unpack text))
+                     , plainTextPartContent = text'
                      }))
            MIME.Text "html" ->
              void

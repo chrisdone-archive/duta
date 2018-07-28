@@ -119,7 +119,7 @@ data Interaction c m = Interaction
   }
 
 interaction ::
-     (MonadThrow m)
+     (MonadThrow m, MonadLogger m)
   => Interaction c m
   -> C.ConduitT ByteString c m ()
 interaction Interaction {..} = do
@@ -136,7 +136,12 @@ interaction Interaction {..} = do
   interactionReply (Okay " OK")
   receive_ (Atto8.string "QUIT")
   interactionReply Closing
-  lift (interactionOnMessage (parseMIMEMessage (T.decodeUtf8 data')))
+  case T.decodeUtf8' data' of
+    Left e ->
+      logError
+        ("Unable to parse string: " <> T.pack (show e) <> ", string was: " <>
+         T.pack (show data'))
+    Right str -> lift (interactionOnMessage (parseMIMEMessage str))
 
 receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ p = receive p >> pure ()
