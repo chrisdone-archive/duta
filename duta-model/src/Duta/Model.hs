@@ -188,7 +188,14 @@ lookupHeader label value =
 labelThread :: MonadIO m => Label -> ThreadId -> ReaderT Persistent.SqlBackend m ()
 labelThread label threadId = do
   tagId <- getLabelTagId label
+  void (Persistent.deleteWhere [ThreadTagThread ==. threadId, ThreadTagTag ==. tagId])
   void (Persistent.insert (ThreadTag threadId tagId))
+
+unlabelThread ::
+     MonadIO m => Label -> ThreadId -> ReaderT Persistent.SqlBackend m ()
+unlabelThread label threadId = do
+  tagId <- getLabelTagId label
+  void (Persistent.deleteWhere [ThreadTagThread ==. threadId, ThreadTagTag ==. tagId])
 
 getLabelTagId :: MonadIO m => Label -> ReaderT Persistent.SqlBackend m TagId
 getLabelTagId l = do

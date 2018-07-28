@@ -81,3 +81,6 @@ a:visited {
 .message-to {
   color: #999;
 }
+.thread-actions a + a {
+  margin-left: 1em;
+}

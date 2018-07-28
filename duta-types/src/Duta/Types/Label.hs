@@ -8,6 +8,7 @@ import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.Persist.Sql
+import           Yesod.Core.Dispatch
 
 instance PersistFieldSql Label where
   sqlType _ = SqlString
@@ -26,6 +27,13 @@ data Label
   | Muted
   | Other Text
   deriving (Show, Eq)
+
+instance PathPiece Label where
+  fromPathPiece = either (const Nothing) Just . parseSlug
+  toPathPiece = labelSlug
+
+instance Read Label where
+  readsPrec _ = \s -> [(l, "") | Right l <- [parseSlug (T.pack s)]]
 
 parseSlug :: Text -> Either Text Label
 parseSlug t =

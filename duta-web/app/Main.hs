@@ -31,6 +31,7 @@ import           Data.Time
 import qualified Database.Esqueleto as E
 import           Database.Persist.Postgresql as Persistent
 import           Development
+import           Duta.Model
 import           Duta.Types.Label
 import           Duta.Types.Model
 import           Lucid
@@ -67,6 +68,8 @@ mkYesod "App" [parseRoutes|
   / InboxR GET
   /auth AuthR Auth getAuth
   /thread/#ThreadId ThreadR GET
+  /apply-label/#ThreadId/#Label ApplyLabelR GET
+  /remove-label/#ThreadId/#Label RemoveLabelR GET
 |]
 
 instance Yesod App where
@@ -176,6 +179,7 @@ getInboxR = do
                       [class_ "inbox"]
                       (do topnav_ url
                           h1_ "Inbox"
+                          when (null labelledThreads) (p_ "No messages!")
                           mapM_
                             (\(Entity threadId thread, labels) -> do
                                let unreadClass =
@@ -188,7 +192,9 @@ getInboxR = do
                                  [class_ "thread-preview"]
                                  (do timestamp_ (threadUpdated thread)
                                      span_
-                                       [class_ ("messages-count " <> unreadClass)]
+                                       [ class_
+                                           ("messages-count " <> unreadClass)
+                                       ]
                                        (do "("
                                            toHtml (show (threadMessages thread))
                                            ")")
@@ -317,6 +323,17 @@ getThreadR threadId = do
                           [class_ "thread"]
                           (do topnav_ url
                               h1_ (toHtml (threadSubject thread))
+                              p_ [class_ "thread-actions"]
+                                (do a_
+                                      [ href_
+                                          (url (RemoveLabelR threadId Inbox))
+                                      ]
+                                      "Archive"
+                                    a_
+                                      [ href_
+                                          (url (ApplyLabelR threadId Unread))
+                                      ]
+                                      "Mark unread")
                               void
                                 (displayForest
                                    displayMessage
@@ -362,6 +379,23 @@ toPlainTextPart htmlPart =
         then stripBlankLines (y : xs)
         else x : stripBlankLines (y : xs)
     stripBlankLines x = x
+
+--------------------------------------------------------------------------------
+-- Apply label
+
+getApplyLabelR :: ThreadId -> Label -> Handler ()
+getApplyLabelR tid label = do
+  runDB (labelThread label tid)
+  case label of
+    Unread -> redirect InboxR
+    _ -> redirect (ThreadR tid)
+
+getRemoveLabelR :: ThreadId -> Label -> Handler ()
+getRemoveLabelR tid label = do
+  runDB (unlabelThread label tid)
+  case label of
+    Inbox -> redirect InboxR
+    _ -> redirect (ThreadR tid)
 
 --------------------------------------------------------------------------------
 -- Main entry point
