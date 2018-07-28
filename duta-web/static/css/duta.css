@@ -46,7 +46,8 @@ a:visited {
 .message-header + .message-body {
   margin-top: 1em;
 }
-.thread-preview-link {
+.thread-preview-unread {
+  font-weight: bold
 }
 .thread-preview {
   background: #fff;

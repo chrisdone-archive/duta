@@ -61,8 +61,9 @@ insertModelMessage received value = do
       (E.select
          (E.from
             (\(threadTag, tag) -> do
-               E.where_ (threadTag E.^. ThreadTagThread E.==. E.val threadId E.&&.
-                         threadTag E.^. ThreadTagTag E.==. tag E.^. TagId)
+               E.where_
+                 ((threadTag E.^. ThreadTagThread E.==. E.val threadId) E.&&.
+                  (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
                pure tag)))
   labelThread Unread threadId
   unless (elem Muted labels) (labelThread Inbox threadId)
@@ -107,7 +108,6 @@ getThreadId subject value =
              { threadSubject = subject
              , threadCreated = now
              , threadUpdated = now
-             , threadArchived = False
              , threadMessages = 0
              })
       pure (threadId, Nothing)

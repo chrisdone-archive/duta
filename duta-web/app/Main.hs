@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time
 import qualified Database.Esqueleto as E
-import           Database.Persist.Postgresql
+import           Database.Persist.Postgresql as Persistent
 import           Development
 import           Duta.Types.Label
 import           Duta.Types.Model
@@ -128,17 +128,39 @@ getInboxR = do
   case mu of
     Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
     Just {} -> do
-      threads <-
+      labelledThreads <-
         runDB
-          (E.select
-             (E.from
-                (\(thread, threadTag, tag) -> do
-                   E.where_
-                     ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
-                      (threadTag E.^. ThreadTagThread E.==. thread E.^. ThreadId) E.&&.
-                      (tag E.^. TagLabel E.==. E.val Inbox))
-                   E.orderBy [E.desc (thread E.^. ThreadUpdated)]
-                   pure thread)))
+          (do threads <-
+                E.select
+                  (E.from
+                     (\(thread, threadTag, tag) -> do
+                        E.where_
+                          ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
+                           (threadTag E.^. ThreadTagThread E.==. thread E.^.
+                            ThreadId) E.&&.
+                           (tag E.^. TagLabel E.==. E.val Inbox))
+                        E.orderBy [E.desc (thread E.^. ThreadUpdated)]
+                        pure thread))
+              threadsLabels <-
+                E.select
+                  (E.from
+                     (\(threadTag, tag) -> do
+                        E.where_
+                          ((threadTag E.^. ThreadTagThread `E.in_`
+                            E.valList (map entityKey threads)) E.&&.
+                           (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+                        pure (threadTag, tag)))
+              pure
+                (map
+                   (\thread ->
+                      ( thread
+                      , mapMaybe
+                          (\(Entity _ threadTag, label) -> do
+                             guard
+                               (threadTagThread threadTag == entityKey thread)
+                             pure label)
+                          threadsLabels))
+                   threads))
       lucid
         (\url ->
            doctypehtml_
@@ -155,21 +177,29 @@ getInboxR = do
                       (do topnav_ url
                           h1_ "Inbox"
                           mapM_
-                            (\(Entity threadId thread) -> do
+                            (\(Entity threadId thread, labels) -> do
+                               let unreadClass =
+                                     if elem
+                                          Unread
+                                          (map (tagLabel . entityVal) labels)
+                                       then "thread-preview-unread"
+                                       else ""
                                div_
                                  [class_ "thread-preview"]
                                  (do timestamp_ (threadUpdated thread)
                                      span_
-                                       [class_ "messages-count"]
+                                       [class_ ("messages-count " <> unreadClass)]
                                        (do "("
                                            toHtml (show (threadMessages thread))
                                            ")")
                                      a_
-                                       [ class_ "thread-preview-link"
+                                       [ class_
+                                           ("thread-preview-link " <>
+                                            unreadClass)
                                        , href_ (url (ThreadR threadId))
                                        ]
                                        (toHtml (threadSubject thread))))
-                            threads))))
+                            labelledThreads))))
 
 --------------------------------------------------------------------------------
 -- Thread page
@@ -178,7 +208,22 @@ getThreadR :: ThreadId -> Handler LucidHtml
 getThreadR threadId = do
   (mthread, messages, plainParts) <-
     runDB
-      (do mthread <- get threadId
+      (do labels <-
+            E.select
+              (E.from
+                 (\(threadTag, tag) -> do
+                    E.where_
+                      ((threadTag E.^. ThreadTagThread E.==. E.val threadId) E.&&.
+                       (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+                    pure (threadTag, tag)))
+          mapM_
+            Persistent.delete
+            (mapMaybe
+               (\(threadTag, tag) -> do
+                  guard (tagLabel (entityVal tag) == Unread)
+                  pure (entityKey threadTag))
+               labels)
+          mthread <- get threadId
           messages <-
             selectList [MessageThread ==. threadId] [Asc MessageReceived]
           plainParts0 <-
@@ -189,9 +234,7 @@ getThreadR threadId = do
             if null plainParts0
               then fmap
                      (map (toPlainTextPart . entityVal))
-                     (selectList
-                        [HtmlPartMessage <-. map entityKey messages]
-                        [])
+                     (selectList [HtmlPartMessage <-. map entityKey messages] [])
               else pure plainParts0
           pure (mthread, messages, plainParts))
   let (g, v2n, k2v) =
