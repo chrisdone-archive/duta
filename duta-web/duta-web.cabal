@@ -14,6 +14,7 @@ cabal-version:       >=1.10
 executable duta-web
   hs-source-dirs:      app
   main-is:             Main.hs
+  other-modules: Development
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , duta-smtp-receiver

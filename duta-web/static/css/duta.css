@@ -1,6 +1,9 @@
 body {
   background: #f0f0f0;
   margin-bottom: 5em;
+  font-family: sans-serif;
+  -webkit-text-size-adjust: 300%;
+  word-break: break-word;
 }
 a {
   color: #0877d2;
@@ -30,12 +33,20 @@ a:visited {
 .message + .message {
   margin-top: 1em;
 }
+.message + .message-children,
+.message-children + .message {
+  margin-top: 1em;
+}
+.message-children {
+}
 .message-timestamp {
   float: right;
   color: #888;
 }
 .message-header + .message-body {
   margin-top: 1em;
+}
+.thread-preview-link {
 }
 .thread-preview {
   background: #fff;
@@ -65,4 +76,7 @@ a:visited {
 }
 .menu-logout {
   float: right;
+}
+.message-to {
+  color: #999;
 }

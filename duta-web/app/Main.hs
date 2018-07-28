@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -26,8 +25,8 @@ import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time
-import           Data.Tree
 import           Database.Persist.Postgresql
+import           Development
 import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
@@ -38,17 +37,6 @@ import           Yesod.Auth.Hardcoded
 import           Yesod.Auth.Message (AuthMessage(InvalidLogin))
 import           Yesod.EmbeddedStatic
 import           Yesod.Lucid
-
---------------------------------------------------------------------------------
--- Constants and settings
-
--- | Dev flag.
-development :: Bool
-#ifdef DEVELOPMENT
-development = True
-#else
-development = False
-#endif
 
 --------------------------------------------------------------------------------
 -- App
@@ -65,7 +53,7 @@ data App = App
   , appStatic :: EmbeddedStatic
   }
 
-mkEmbeddedStatic True "embeddedStatic" [embedDir "static"]
+mkEmbeddedStatic development "embeddedStatic" [embedDir "static"]
 
 mkYesod "App" [parseRoutes|
   /static StaticR EmbeddedStatic appStatic
@@ -193,11 +181,13 @@ getThreadR threadId = do
                     (filter ((== Just mid) . messageParent . entityVal) messages)))
              messages)
       forest =
-        dfs
-          g
-          (mapMaybe
-             (k2v . entityKey)
-             (filter (isNothing . messageParent . entityVal) messages))
+        fmap
+          (fmap v2n)
+          (dfs
+             g
+             (mapMaybe
+                (k2v . entityKey)
+                (filter (isNothing . messageParent . entityVal) messages)))
   case mthread of
     Nothing -> notFound
     Just thread ->
@@ -210,9 +200,11 @@ getThreadR threadId = do
                          [class_ "message-header"]
                          (do timestamp_ (messageReceived message)
                              div_
+                               [class_ "message-from"]
                                (do strong_ "From: "
                                    toHtml (messageFrom message))
                              div_
+                               [class_ "message-to"]
                                (do strong_ "To: "
                                    toHtml (messageTo message)))
                        div_
@@ -258,23 +250,20 @@ getThreadR threadId = do
                           [class_ "thread"]
                           (do topnav_ url
                               h1_ (toHtml (threadSubject thread))
-                              pre_
-                                (toHtml
-                                   (drawForest
-                                      (fmap
-                                         (fmap
-                                            ((\(n, _, _) ->
-                                                T.unpack (messageFrom n)) .
-                                             v2n))
-                                         forest)))
-                              mapM_
-                                (void . traverse displayMessage)
-                                (fmap
+                              void
+                                (displayForest
+                                   displayMessage
                                    (fmap
-                                      (\v ->
-                                         let (n, k, _) = v2n v
-                                          in Entity k n))
-                                   forest)))))
+                                      (fmap (\(n, k, _) -> Entity k n))
+                                      forest))))))
+
+displayForest :: (a -> Html ()) -> Forest a -> Html ()
+displayForest render xs = mapM_ (displayTree render) xs
+
+displayTree :: (a -> Html ()) -> Tree a -> Html ()
+displayTree render (Node parent children) = do
+  render parent
+  div_ [class_ "message-children"] (displayForest render children)
 
 --------------------------------------------------------------------------------
 -- Main entry point
