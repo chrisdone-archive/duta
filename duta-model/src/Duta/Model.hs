@@ -20,8 +20,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
-import           Database.Persist ((<-.), (=.), (+=.), (==.))
+import           Database.Persist ((+=.), (<-.), (=.), (==.))
 import qualified Database.Persist.Sqlite as Persistent
+import           Duta.Types.Label
 import           Duta.Types.Model
 import           Duta.Types.Order
 
@@ -53,6 +54,11 @@ insertModelMessage received value = do
          })
   now <- liftIO getCurrentTime
   Persistent.update threadId [ThreadUpdated =. now, ThreadMessages +=. 1]
+  -- labels <- fmap (map Persistent.entityVal) (Persistent.selectList [ThreadTagThread ==. threadId] [])
+  labels <- pure []
+  labelThread Unread threadId
+  unless (elem Muted labels)
+         (labelThread Inbox threadId)
   evalStateT (insertContent msgId Nothing value) (Order 0)
 
 -- | Figure out the thread that a message belongs to.
@@ -171,3 +177,18 @@ lookupHeader label value =
   case find (\(MIME.MIMEParam k _) -> k == label) (MIME.mime_val_headers value) of
     Just (MIME.MIMEParam _ v) -> pure v
     Nothing -> throwM (MissingHeader label)
+
+labelThread :: MonadIO m => Label -> ThreadId -> ReaderT Persistent.SqlBackend m ()
+labelThread label threadId = do
+  tagId <- getLabelTagId label
+  void (Persistent.insert (ThreadTag threadId tagId))
+
+getLabelTagId :: MonadIO m => Label -> ReaderT Persistent.SqlBackend m TagId
+getLabelTagId l = do
+  mtag <- Persistent.selectFirst [TagLabel ==. l] []
+  case mtag of
+    Just (Persistent.Entity t _) -> pure t
+    Nothing -> newTagFromLabel l
+
+newTagFromLabel :: MonadIO m =>  Label -> ReaderT Persistent.SqlBackend m TagId
+newTagFromLabel l = Persistent.insert (Tag {tagLabel = l, tagTitle = labelTitle l})

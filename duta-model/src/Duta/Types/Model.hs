@@ -14,9 +14,22 @@ import Data.Text (Text)
 import Data.Time
 import Database.Persist.Sql
 import Database.Persist.TH
+import Duta.Types.Label
 import Duta.Types.Order
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+  Tag
+    label Label
+    title Text
+    deriving Show
+    deriving Eq
+
+  ThreadTag
+    thread ThreadId
+    tag TagId
+    deriving Show
+    deriving Eq
+
   Thread
     subject Text
     created UTCTime
