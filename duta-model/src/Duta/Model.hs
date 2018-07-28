@@ -63,7 +63,7 @@ getThreadId ::
   -> ReaderT Persistent.SqlBackend m (ThreadId, Maybe MessageId)
 getThreadId subject value =
   case lookupHeader "references" value of
-    Nothing -> tryViaSubject
+    Nothing -> newThread
     Just ref -> do
       let messageIdsParentFirst =
             maybe [] pure (lookupHeader "in-reply-to" value) ++
@@ -84,13 +84,8 @@ getThreadId subject value =
       case mparent of
         Just (Persistent.Entity messageId m) ->
           pure (messageThread m, Just messageId)
-        Nothing -> tryViaSubject
-  where
-    tryViaSubject = do
-      mthread <- Persistent.selectFirst [ThreadSubject ==. subject] []
-      case mthread of
-        Just (Persistent.Entity threadId _) -> pure (threadId, Nothing)
         Nothing -> newThread
+  where
     newThread = do
       now <- liftIO getCurrentTime
       threadId <-
