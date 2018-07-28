@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -16,6 +17,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.Function
+import           Data.Generics (listify)
 import           Data.Graph
 import           Data.List
 import           Data.Maybe
@@ -24,6 +26,7 @@ import           Data.Ord
 import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
 import           Data.Time
 import           Database.Persist.Postgresql
 import           Development
@@ -31,6 +34,8 @@ import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
 import           System.Environment
+import           Text.HTML.DOM
+import           Text.XML
 import           Yesod hiding (toHtml, Html)
 import           Yesod.Auth
 import           Yesod.Auth.Hardcoded
@@ -165,10 +170,18 @@ getThreadR threadId = do
       (do mthread <- get threadId
           messages <-
             selectList [MessageThread ==. threadId] [Asc MessageReceived]
-          plainParts <-
+          plainParts0 <-
             fmap
               (map entityVal)
               (selectList [PlainTextPartMessage <-. map entityKey messages] [])
+          plainParts <-
+            if null plainParts0
+              then fmap
+                     (map (toPlainTextPart . entityVal))
+                     (selectList
+                        [HtmlPartMessage <-. map entityKey messages]
+                        [])
+              else pure plainParts0
           pure (mthread, messages, plainParts))
   let (g, v2n, k2v) =
         graphFromEdges
@@ -264,6 +277,37 @@ displayTree :: (a -> Html ()) -> Tree a -> Html ()
 displayTree render (Node parent children) = do
   render parent
   div_ [class_ "message-children"] (displayForest render children)
+
+toPlainTextPart :: HtmlPart -> PlainTextPart
+toPlainTextPart htmlPart =
+  PlainTextPart
+    { plainTextPartOrdering = htmlPartOrdering htmlPart
+    , plainTextPartMessage = htmlPartMessage htmlPart
+    , plainTextPartParent = htmlPartParent htmlPart
+    , plainTextPartContent =
+        T.unlines
+          (stripBlankLines
+             (dropWhile
+                T.null
+                (map
+                   T.strip
+                   (T.lines
+                      (T.concat
+                         (mapMaybe
+                            (\case
+                               NodeContent t -> Just t
+                               _ -> Nothing)
+                            (listify
+                               (const True)
+                               (parseLT
+                                  (LT.fromStrict (htmlPartContent htmlPart))))))))))
+    }
+  where
+    stripBlankLines (x:y:xs) =
+      if T.null x && T.null y
+        then stripBlankLines (y : xs)
+        else x : stripBlankLines (y : xs)
+    stripBlankLines x = x
 
 --------------------------------------------------------------------------------
 -- Main entry point

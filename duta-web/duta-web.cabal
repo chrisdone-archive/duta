@@ -35,4 +35,7 @@ executable duta-web
                      , yesod-static
                      , yesod-core
                      , containers
+                     , html-conduit
+                     , xml-conduit
+                     , syb
   default-language:    Haskell2010
