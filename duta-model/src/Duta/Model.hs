@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
-import           Database.Persist ((<-.), (=.), (+=.))
+import           Database.Persist ((<-.), (=.), (+=.), (==.))
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Model
 import           Duta.Types.Order
@@ -62,7 +62,7 @@ getThreadId ::
   -> ReaderT Persistent.SqlBackend m (ThreadId, Maybe MessageId)
 getThreadId subject value =
   case lookupHeader "references" value of
-    Nothing -> newThread
+    Nothing -> tryViaSubject
     Just ref -> do
       let messageIdsParentFirst =
             maybe [] pure (lookupHeader "in-reply-to" value) ++
@@ -83,8 +83,13 @@ getThreadId subject value =
       case mparent of
         Just (Persistent.Entity messageId m) ->
           pure (messageThread m, Just messageId)
-        Nothing -> newThread
+        Nothing -> tryViaSubject
   where
+    tryViaSubject = do
+      mthread <- Persistent.selectFirst [ThreadSubject ==. subject] []
+      case mthread of
+        Just (Persistent.Entity threadId _) -> pure (threadId, Nothing)
+        Nothing -> newThread
     newThread = do
       now <- liftIO getCurrentTime
       threadId <-
