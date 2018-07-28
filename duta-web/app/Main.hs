@@ -66,6 +66,7 @@ mkEmbeddedStatic development "embeddedStatic" [embedDir "static"]
 mkYesod "App" [parseRoutes|
   /static StaticR EmbeddedStatic appStatic
   / InboxR GET
+  /all AllR GET
   /auth AuthR Auth getAuth
   /thread/#ThreadId ThreadR GET
   /apply-label/#ThreadId/#Label ApplyLabelR GET
@@ -179,40 +180,105 @@ getInboxR = do
                       [class_ "inbox"]
                       (do topnav_ url
                           h1_ "Inbox"
-                          when (null labelledThreads) (p_ "No messages!")
-                          mapM_
-                            (\(Entity threadId thread, labels) -> do
-                               let unreadClass =
-                                     if elem
-                                          Unread
-                                          (map (tagLabel . entityVal) labels)
-                                       then "thread-preview-unread"
-                                       else ""
-                               div_
-                                 [class_ "thread-preview"]
-                                 (do timestamp_ (threadUpdated thread)
-                                     span_
-                                       [ class_
-                                           ("messages-count " <> unreadClass)
-                                       ]
-                                       (do "("
-                                           toHtml (show (threadMessages thread))
-                                           ")")
-                                     a_
-                                       [ class_
-                                           ("thread-preview-link " <>
-                                            unreadClass)
-                                       , href_ (url (ThreadR threadId))
-                                       ]
-                                       (toHtml (threadSubject thread))))
-                            labelledThreads))))
+                          listThreads url labelledThreads))))
+
+--------------------------------------------------------------------------------
+-- All page
+
+getAllR :: Handler LucidHtml
+getAllR = do
+  mu <- maybeAuthId
+  case mu of
+    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
+    Just {} -> do
+      labelledThreads <-
+        runDB
+          (do threads <-
+                E.select
+                  (E.from
+                     (\thread -> do
+                        E.where_
+                          (thread E.^. ThreadId `E.notIn`
+                           E.subList_select
+                             (E.from
+                                (\(threadTag, tag) -> do
+                                   E.where_
+                                     (threadTag E.^. ThreadTagTag E.==. tag E.^.
+                                      TagId)
+                                   pure (threadTag E.^. ThreadTagThread))))
+                        E.orderBy [E.desc (thread E.^. ThreadUpdated)]
+                        E.limit 30
+                        pure thread))
+              threadsLabels <-
+                E.select
+                  (E.from
+                     (\(threadTag, tag) -> do
+                        E.where_
+                          ((threadTag E.^. ThreadTagThread `E.in_`
+                            E.valList (map entityKey threads)) E.&&.
+                           (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+                        pure (threadTag, tag)))
+              pure
+                (map
+                   (\thread ->
+                      ( thread
+                      , mapMaybe
+                          (\(Entity _ threadTag, label) -> do
+                             guard
+                               (threadTagThread threadTag == entityKey thread)
+                             pure label)
+                          threadsLabels))
+                   threads))
+      lucid
+        (\url ->
+           doctypehtml_
+             (do head_
+                   (do meta_ [charset_ "utf-8"]
+                       link_
+                         [ rel_ "stylesheet"
+                         , type_ "text/css"
+                         , href_ (url (StaticR css_duta_css))
+                         ])
+                 body_
+                   (div_
+                      [class_ "all"]
+                      (do topnav_ url
+                          h1_ "All"
+                          listThreads url labelledThreads))))
+
+listThreads :: (Route App -> Text) -> [(Entity Thread, [Entity Tag])] -> Html ()
+listThreads url labelledThreads = do
+  p_ [class_ "main-actions"]
+    (do a_ [href_ (url InboxR)] "Inbox"
+        a_ [href_ (url AllR)] "All")
+  when (null labelledThreads) (p_ "No messages!")
+  mapM_
+    (\(Entity threadId thread, labels) -> do
+       let unreadClass =
+             if elem Unread (map (tagLabel . entityVal) labels)
+               then "thread-preview-unread"
+               else ""
+       div_
+         [class_ "thread-preview"]
+         (do timestamp_ (threadUpdated thread)
+             span_
+               [class_ ("messages-count " <> unreadClass)]
+               (do "("
+                   toHtml (show (threadMessages thread))
+                   ")")
+             a_
+               [ class_ ("thread-preview-link " <> unreadClass)
+               , href_ (url (ThreadR threadId))
+               ]
+               (toHtml (threadSubject thread))))
+    labelledThreads
 
 --------------------------------------------------------------------------------
 -- Thread page
 
 getThreadR :: ThreadId -> Handler LucidHtml
 getThreadR threadId = do
-  (mthread, messages, plainParts) <-
+  (mthread, messages, plainParts, labels) <-
     runDB
       (do labels <-
             E.select
@@ -242,7 +308,7 @@ getThreadR threadId = do
                      (map (toPlainTextPart . entityVal))
                      (selectList [HtmlPartMessage <-. map entityKey messages] [])
               else pure plainParts0
-          pure (mthread, messages, plainParts))
+          pure (mthread, messages, plainParts, labels))
   let (g, v2n, k2v) =
         graphFromEdges
           (map
@@ -324,11 +390,18 @@ getThreadR threadId = do
                           (do topnav_ url
                               h1_ (toHtml (threadSubject thread))
                               p_ [class_ "thread-actions"]
-                                (do a_
-                                      [ href_
-                                          (url (RemoveLabelR threadId Inbox))
-                                      ]
-                                      "Archive"
+                                (do a_ [href_ (url InboxR)] "Back to Inbox"
+                                    if elem Inbox (map (tagLabel . entityVal . snd) labels)
+                                       then a_
+                                              [ href_
+                                                  (url (RemoveLabelR threadId Inbox))
+                                              ]
+                                              "Archive"
+                                       else a_
+                                              [ href_
+                                                  (url (ApplyLabelR threadId Inbox))
+                                              ]
+                                              "Move to Inbox"
                                     a_
                                       [ href_
                                           (url (ApplyLabelR threadId Unread))
