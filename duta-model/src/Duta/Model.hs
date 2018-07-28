@@ -5,6 +5,7 @@
 
 module Duta.Model where
 
+import qualified Database.Esqueleto as E
 import qualified Codec.MIME.Type as MIME
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
@@ -54,11 +55,17 @@ insertModelMessage received value = do
          })
   now <- liftIO getCurrentTime
   Persistent.update threadId [ThreadUpdated =. now, ThreadMessages +=. 1]
-  -- labels <- fmap (map Persistent.entityVal) (Persistent.selectList [ThreadTagThread ==. threadId] [])
-  labels <- pure []
+  labels <-
+    fmap
+      (map (tagLabel . Persistent.entityVal))
+      (E.select
+         (E.from
+            (\(threadTag, tag) -> do
+               E.where_ (threadTag E.^. ThreadTagThread E.==. E.val threadId E.&&.
+                         threadTag E.^. ThreadTagTag E.==. tag E.^. TagId)
+               pure tag)))
   labelThread Unread threadId
-  unless (elem Muted labels)
-         (labelThread Inbox threadId)
+  unless (elem Muted labels) (labelThread Inbox threadId)
   evalStateT (insertContent msgId Nothing value) (Order 0)
 
 -- | Figure out the thread that a message belongs to.

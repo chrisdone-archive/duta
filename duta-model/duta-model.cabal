@@ -32,5 +32,6 @@ library
     bytestring,
     time,
     email-validate,
-    attoparsec
+    attoparsec,
+    esqueleto
   default-language:    Haskell2010

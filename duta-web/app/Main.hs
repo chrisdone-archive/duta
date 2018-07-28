@@ -28,8 +28,10 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time
+import qualified Database.Esqueleto as E
 import           Database.Persist.Postgresql
 import           Development
+import           Duta.Types.Label
 import           Duta.Types.Model
 import           Lucid
 import           Options.Applicative.Simple
@@ -127,7 +129,16 @@ getInboxR = do
     Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
     Just {} -> do
       threads <-
-        runDB (selectList [ThreadArchived ==. False] [Desc ThreadUpdated])
+        runDB
+          (E.select
+             (E.from
+                (\(thread, threadTag, tag) -> do
+                   E.where_
+                     ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
+                      (threadTag E.^. ThreadTagThread E.==. thread E.^. ThreadId) E.&&.
+                      (tag E.^. TagLabel E.==. E.val Inbox))
+                   E.orderBy [E.desc (thread E.^. ThreadUpdated)]
+                   pure thread)))
       lucid
         (\url ->
            doctypehtml_

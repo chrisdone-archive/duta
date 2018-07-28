@@ -1,4 +1,5 @@
 resolver: lts-11.13
+
 packages:
 - duta-smtp-receiver
 - duta-web
@@ -11,4 +12,8 @@ packages:
 - location:
     git: https://github.com/chrisdone/mime
     commit: 8f3b9124abec95145b53849b48489129fe5c7368
+  extra-dep: true
+- location:
+    git: https://github.com/bitemyapp/esqueleto.git
+    commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
   extra-dep: true
