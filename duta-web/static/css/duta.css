@@ -2,9 +2,12 @@ body {
   background: #f0f0f0;
   margin-bottom: 5em;
   font-family: sans-serif;
-  -webkit-text-size-adjust: 300%;
   word-break: break-word;
 }
+@media (min-width:320px)  {
+  -webkit-text-size-adjust: 300%;
+}
+
 a {
   color: #0877d2;
   text-decoration: none;
