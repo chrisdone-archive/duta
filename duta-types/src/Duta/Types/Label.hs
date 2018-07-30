@@ -44,7 +44,7 @@ parseSlug t =
     "unread" -> pure Unread
     "deleted" -> pure Deleted
     "muted" -> pure Muted
-    "spam" -> pure Muted
+    "spam" -> pure Spam
     _
       | T.all ((||) <$> isDigit <*> isLower) t -> pure (Other t)
     _ -> Left "Invalid slug for label. Should be lowercase alphanumeric."

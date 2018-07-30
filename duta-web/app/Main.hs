@@ -405,24 +405,26 @@ getThreadR threadId = do
                               h1_ (toHtml (threadSubject thread))
                               p_
                                 [class_ "thread-actions"]
-                                (do a_ [href_ (url InboxR)] "Back to Inbox"
+                                (do
                                     let labels' =
                                           map
                                             (tagLabel . entityVal . snd)
                                             labels
                                     if elem Inbox labels'
-                                      then a_
-                                             [ href_
-                                                 (url
-                                                    (RemoveLabelR threadId Inbox))
-                                             ]
-                                             "Archive"
-                                      else a_
-                                             [ href_
-                                                 (url
-                                                    (ApplyLabelR threadId Inbox))
-                                             ]
-                                             "Move to Inbox"
+                                      then do a_ [href_ (url InboxR)] "Back to Inbox"
+                                              a_
+                                                [ href_
+                                                    (url
+                                                       (RemoveLabelR threadId Inbox))
+                                                ]
+                                                "Archive"
+                                      else do a_ [href_ (url AllR)] "Back to all"
+                                              a_
+                                                [ href_
+                                                    (url
+                                                       (ApplyLabelR threadId Inbox))
+                                                ]
+                                                "Move to Inbox"
                                     unless
                                       (elem Unread labels')
                                       (a_
