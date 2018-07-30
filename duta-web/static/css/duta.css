@@ -13,7 +13,9 @@ a:visited {
 }
 .inbox,
 .thread,
-.all {
+.all,
+.spam,
+.deleted {
   max-width: 60em;
   margin-left: auto;
   margin-right: auto;
