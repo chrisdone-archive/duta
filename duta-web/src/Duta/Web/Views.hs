@@ -33,7 +33,9 @@ listThreads :: (Route App -> Text) -> [(Entity Thread, [Entity Tag])] -> Html ()
 listThreads url labelledThreads = do
   p_ [class_ "main-actions"]
     (do a_ [href_ (url InboxR)] "Inbox"
-        a_ [href_ (url AllR)] "All")
+        a_ [href_ (url AllR)] "All"
+        a_ [href_ (url DeletedR)] "Deleted"
+        a_ [href_ (url SpamR)] "Spam")
   when (null labelledThreads) (p_ "No messages!")
   mapM_
     (\(Entity threadId thread, labels) -> do

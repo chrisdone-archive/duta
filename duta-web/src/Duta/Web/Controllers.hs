@@ -87,6 +87,67 @@ getAllR = do
                           h1_ "All"
                           listThreads url labelledThreads))))
 
+getDeletedR :: Handler LucidHtml
+getDeletedR = do
+  mu <- maybeAuthId
+  case mu of
+    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
+    Just {} -> do
+      labelledThreads <-
+        runDB
+          (getThreadsByQuery
+             Query
+               { queryIncludeLabels = []
+               , queryExcludeLabels = []
+               , queryLimit = 30
+               })
+      lucid
+        (\url ->
+           doctypehtml_
+             (do head_
+                   (do meta_ [charset_ "utf-8"]
+                       link_
+                         [ rel_ "stylesheet"
+                         , type_ "text/css"
+                         , href_ (url (StaticR css_duta_css))
+                         ])
+                 body_
+                   (div_
+                      [class_ "deleted"]
+                      (do topnav_ url
+                          h1_ "Deleted"
+                          listThreads url labelledThreads))))
+
+getSpamR :: Handler LucidHtml
+getSpamR = do
+  mu <- maybeAuthId
+  case mu of
+    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
+    Just {} -> do
+      labelledThreads <-
+        runDB
+          (getThreadsByQuery
+             Query
+               { queryIncludeLabels = [Spam]
+               , queryExcludeLabels = []
+               , queryLimit = 30
+               })
+      lucid
+        (\url ->
+           doctypehtml_
+             (do head_
+                   (do meta_ [charset_ "utf-8"]
+                       link_
+                         [ rel_ "stylesheet"
+                         , type_ "text/css"
+                         , href_ (url (StaticR css_duta_css))
+                         ])
+                 body_
+                   (div_
+                      [class_ "spam"]
+                      (do topnav_ url
+                          h1_ "Spam"
+                          listThreads url labelledThreads))))
 
 getThreadR :: ThreadId -> Handler LucidHtml
 getThreadR threadId = do

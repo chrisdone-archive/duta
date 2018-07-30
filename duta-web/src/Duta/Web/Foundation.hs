@@ -29,6 +29,8 @@ mkYesodData "App" [parseRoutes|
   /static StaticR EmbeddedStatic appStatic
   / InboxR GET
   /all AllR GET
+  /deleted DeletedR GET
+  /spam SpamR GET
   /auth AuthR Auth getAuth
   /thread/#ThreadId ThreadR GET
   /apply-label/#ThreadId/#Label ApplyLabelR GET
