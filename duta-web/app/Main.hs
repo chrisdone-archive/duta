@@ -455,7 +455,20 @@ getThreadR threadId = do
                                                  (url
                                                     (ApplyLabelR threadId Deleted))
                                              ]
-                                             "Delete")
+                                             "Delete"
+                                    if elem Spam labels'
+                                      then a_
+                                             [ href_
+                                                 (url
+                                                    (RemoveLabelR threadId Spam))
+                                             ]
+                                             "Not Spam"
+                                      else a_
+                                             [ href_
+                                                 (url
+                                                    (ApplyLabelR threadId Spam))
+                                             ]
+                                             "Spam")
                               void
                                 (displayForest
                                    displayMessage
@@ -489,6 +502,8 @@ toPlainTextPart htmlPart =
                          (mapMaybe
                             (\case
                                NodeContent t -> Just t
+                               NodeElement (Element {elementName = Name{nameLocalName = "style"}}) -> Nothing
+                               NodeElement (Element {elementName = Name{nameLocalName = "script"}}) -> Nothing
                                _ -> Nothing)
                             (listify
                                (const True)
@@ -507,9 +522,30 @@ toPlainTextPart htmlPart =
 
 getApplyLabelR :: ThreadId -> Label -> Handler ()
 getApplyLabelR tid label = do
-  runDB (labelThread label tid)
+  labels <-
+    runDB
+      (do labels <-
+            E.select
+              (E.from
+                 (\(threadTag, tag) -> do
+                    E.where_
+                      ((threadTag E.^. ThreadTagThread E.==. E.val tid) E.&&.
+                       (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+                    pure tag))
+          labelThread label tid
+          case label of
+            Spam -> labelThread Deleted tid
+            _ -> pure ()
+          pure labels)
+  let goBack =
+        if elem Inbox (map (tagLabel . entityVal) labels)
+          then redirect InboxR
+          else redirect AllR
   case label of
-    Unread -> redirect InboxR
+    Unread -> goBack
+    Deleted -> goBack
+    Spam -> goBack
+    Muted -> goBack
     _ -> redirect (ThreadR tid)
 
 getRemoveLabelR :: ThreadId -> Label -> Handler ()

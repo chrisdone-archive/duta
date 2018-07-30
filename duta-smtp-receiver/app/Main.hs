@@ -50,8 +50,8 @@ main = do
               { startHostname = host
               , startPort = port
               , startOnMessage =
-                  \msg -> do
+                  \bs msg -> do
                     now <- liftIO getCurrentTime
-                    insertModelMessage now msg
+                    insertModelMessage now msg bs
               , startPool = pool
               }))

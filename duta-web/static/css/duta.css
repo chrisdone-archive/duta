@@ -4,10 +4,6 @@ body {
   font-family: sans-serif;
   word-break: break-word;
 }
-@media (min-width:320px)  {
-  -webkit-text-size-adjust: 300%;
-}
-
 a {
   color: #0877d2;
   text-decoration: none;

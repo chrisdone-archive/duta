@@ -53,7 +53,7 @@ instance Exception DutaException
 data Start m = Start
   { startHostname :: String
   , startPort :: Int
-  , startOnMessage :: MIMEValue -> m ()
+  , startOnMessage :: ByteString -> MIMEValue -> m ()
   , startPool :: Pool SqlBackend
   }
 
@@ -114,7 +114,7 @@ makeReply appData rep = do
 
 data Interaction c m = Interaction
   { interactionHostname :: String
-  , interactionOnMessage :: MIMEValue -> m ()
+  , interactionOnMessage :: ByteString -> MIMEValue -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
   }
 
@@ -141,7 +141,7 @@ interaction Interaction {..} = do
       logError
         ("Unable to parse string: " <> T.pack (show e) <> ", string was: " <>
          T.pack (show data'))
-    Right str -> lift (interactionOnMessage (parseMIMEMessage str))
+    Right str -> lift (interactionOnMessage data' (parseMIMEMessage str))
 
 receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ p = receive p >> pure ()

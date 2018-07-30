@@ -5,13 +5,13 @@
 
 module Duta.Model where
 
-import qualified Database.Esqueleto as E
 import qualified Codec.MIME.Type as MIME
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Control.Monad.State
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S8
 import           Data.List
 import           Data.Maybe
@@ -21,6 +21,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Typeable
+import qualified Database.Esqueleto as E
 import           Database.Persist ((+=.), (<-.), (=.), (==.))
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Label
@@ -36,8 +37,9 @@ insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => UTCTime
   -> MIME.MIMEValue
+  -> ByteString
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage received value = do
+insertModelMessage received value original = do
   from <- lookupHeader "from" value
   to <- lookupHeader "to" value
   subject <- lookupHeader "subject" value
@@ -67,6 +69,7 @@ insertModelMessage received value = do
                pure tag)))
   labelThread Unread threadId
   unless (elem Muted labels) (labelThread Inbox threadId)
+  _ <- Persistent.insert (OriginalMessage msgId original)
   evalStateT (insertContent msgId Nothing value) (Order 0)
 
 -- | Figure out the thread that a message belongs to.

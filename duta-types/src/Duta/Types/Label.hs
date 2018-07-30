@@ -25,6 +25,7 @@ data Label
   | Unread
   | Deleted
   | Muted
+  | Spam
   | Other Text
   deriving (Show, Eq)
 
@@ -55,6 +56,7 @@ labelSlug l =
     Sent -> "sent"
     Muted -> "muted"
     Deleted -> "deleted"
+    Spam -> "spam"
     Other t -> t
 
 labelTitle :: Label -> Text
@@ -65,4 +67,5 @@ labelTitle l =
     Sent -> "Sent"
     Muted -> "Muted"
     Deleted -> "Deleted"
+    Spam -> "spam"
     Other t -> t
