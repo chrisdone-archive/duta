@@ -243,8 +243,7 @@ getThreadsByQuery query = do
                          (\(threadTag, tag) -> do
                             E.where_
                               ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
-                               (tag E.^. TagLabel `E.notIn`
-                                E.valList labels))
+                               (tag E.^. TagLabel `E.in_` E.valList labels))
                             pure (threadTag E.^. ThreadTagThread)))) E.&&.
                (case queryIncludeLabels query of
                   [] -> E.val True

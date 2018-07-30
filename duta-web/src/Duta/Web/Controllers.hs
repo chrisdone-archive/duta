@@ -97,8 +97,8 @@ getDeletedR = do
         runDB
           (getThreadsByQuery
              Query
-               { queryIncludeLabels = []
-               , queryExcludeLabels = []
+               { queryIncludeLabels = [Deleted]
+               , queryExcludeLabels = [Spam]
                , queryLimit = 30
                })
       lucid
