@@ -52,6 +52,6 @@ main = do
               , startOnMessage =
                   \bs msg -> do
                     now <- liftIO getCurrentTime
-                    insertModelMessage now msg bs
+                    withResource pool (runReaderT (insertModelMessage now msg bs))
               , startPool = pool
               }))

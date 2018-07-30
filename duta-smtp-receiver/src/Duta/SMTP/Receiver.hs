@@ -57,7 +57,7 @@ data Start m = Start
   , startPool :: Pool SqlBackend
   }
 
-start :: Start (ReaderT SqlBackend (LoggingT IO)) -> LoggingT IO ()
+start :: Start (LoggingT IO) -> LoggingT IO ()
 start Start {..} = do
   UnliftIO run <- askUnliftIO
   liftIO
@@ -67,7 +67,7 @@ start Start {..} = do
     handler run appData =
       catch
         (do logInfo (wrap "CONNECT")
-            withResource startPool (runReaderT conduit)
+            conduit
             logInfo (wrap "SUCCESS"))
         (\case
            ClientQuitUnexpectedly -> logError (wrap "QUIT UNEXPECTEDLY")
@@ -133,15 +133,16 @@ interaction Interaction {..} = do
   receive_ (Atto8.string "DATA")
   interactionReply StartMailInput
   data' <- consume dottedParser
-  interactionReply (Okay " OK")
-  receive_ (Atto8.string "QUIT")
-  interactionReply Closing
   case T.decodeUtf8' data' of
     Left e ->
       logError
         ("Unable to parse string: " <> T.pack (show e) <> ", string was: " <>
          T.pack (show data'))
-    Right str -> lift (interactionOnMessage data' (parseMIMEMessage str))
+    Right str -> do
+      lift (interactionOnMessage data' (parseMIMEMessage str))
+      interactionReply (Okay " OK")
+      receive_ (Atto8.string "QUIT")
+      interactionReply Closing
 
 receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ p = receive p >> pure ()
