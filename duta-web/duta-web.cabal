@@ -11,15 +11,19 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
-executable duta-web
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  other-modules: Development
-  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+library
+  hs-source-dirs:      src
+  exposed-modules:
+    Development
+    Duta.Web
+    Duta.Web.Types
+    Duta.Web.Views
+    Duta.Web.Controllers
+    Duta.Web.Foundation
+  ghc-options:         -Wall
   build-depends:       base
                      , duta-smtp-receiver
                      , monad-logger
-                     , optparse-simple
                      , time
                      , persistent-postgresql
                      , duta-model
@@ -31,6 +35,7 @@ executable duta-web
                      , text
                      , bytestring
                      , yesod-lucid
+                     , persistent
                      , yesod-auth
                      , yesod-static
                      , yesod-core
@@ -40,4 +45,22 @@ executable duta-web
                      , syb
                      , esqueleto
                      , duta-types
+  default-language:    Haskell2010
+
+executable duta-web
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , duta-smtp-receiver
+                     , monad-logger
+                     , optparse-simple
+                     , text
+                     , duta-web
+                     , duta-model
+                     , duta-types
+                     , mtl
+                     , resource-pool
+                     , yesod
+                     , persistent-postgresql
   default-language:    Haskell2010

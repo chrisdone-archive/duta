@@ -68,5 +68,5 @@ labelTitle l =
     Sent -> "Sent"
     Muted -> "Muted"
     Deleted -> "Deleted"
-    Spam -> "spam"
+    Spam -> "Spam"
     Other t -> t

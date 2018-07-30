@@ -13,20 +13,24 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S8
+import           Data.Generics
+import           Data.Int
 import           Data.List
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
 import           Data.Time
-import           Data.Typeable
 import qualified Database.Esqueleto as E
-import           Database.Persist ((+=.), (<-.), (=.), (==.))
+import           Database.Persist (Entity, (+=.), (<-.), (=.), (==.), Entity(..))
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.Types.Label
 import           Duta.Types.Model
 import           Duta.Types.Order
+import           Text.HTML.DOM
+import           Text.XML
 
 data ModelError = MissingHeader Text
   deriving (Show, Typeable)
@@ -208,4 +212,146 @@ getLabelTagId l = do
     Nothing -> newTagFromLabel l
 
 newTagFromLabel :: MonadIO m =>  Label -> ReaderT Persistent.SqlBackend m TagId
-newTagFromLabel l = Persistent.insert (Tag {tagLabel = l, tagTitle = labelTitle l})
+newTagFromLabel l = do
+  now <- liftIO getCurrentTime
+  Persistent.insert
+    (Tag {tagLabel = l, tagTitle = labelTitle l, tagApplied = now})
+
+data Query = Query
+  { queryIncludeLabels :: [Label]
+  , queryExcludeLabels :: [Label]
+  , queryLimit :: Int64
+  }
+
+-- | Return all threads given by a query.
+getThreadsByQuery ::
+     MonadIO m
+  => Query
+  -> ReaderT Persistent.SqlBackend m [(Entity Thread, [Entity Tag])]
+getThreadsByQuery query = do
+  threads <-
+    E.select
+      (E.from
+         (\thread -> do
+            E.where_
+              ((case queryExcludeLabels query of
+                  [] -> E.val True
+                  labels ->
+                    thread E.^. ThreadId `E.notIn`
+                    E.subList_select
+                      (E.from
+                         (\(threadTag, tag) -> do
+                            E.where_
+                              ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
+                               (tag E.^. TagLabel `E.notIn`
+                                E.valList labels))
+                            pure (threadTag E.^. ThreadTagThread)))) E.&&.
+               (case queryIncludeLabels query of
+                  [] -> E.val True
+                  labels ->
+                    thread E.^. ThreadId `E.in_`
+                    E.subList_select
+                      (E.from
+                         (\(threadTag, tag) -> do
+                            E.where_
+                              ((threadTag E.^. ThreadTagTag E.==. tag E.^. TagId) E.&&.
+                               (tag E.^. TagLabel `E.in_` E.valList labels))
+                            pure (threadTag E.^. ThreadTagThread)))))
+            E.orderBy [E.desc (thread E.^. ThreadUpdated)]
+            E.limit (queryLimit query)
+            pure thread))
+  threadsLabels <-
+    E.select
+      (E.from
+         (\(threadTag, tag) -> do
+            E.where_
+              ((threadTag E.^. ThreadTagThread `E.in_`
+                E.valList (map entityKey threads)) E.&&.
+               (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+            pure (threadTag, tag)))
+  pure
+    (map
+       (\thread ->
+          ( thread
+          , mapMaybe
+              (\(Entity _ threadTag, label) -> do
+                 guard (threadTagThread threadTag == entityKey thread)
+                 pure label)
+              threadsLabels))
+       threads)
+
+getThread ::
+     MonadIO m
+  => ThreadId
+  -> ReaderT Persistent.SqlBackend m ( Maybe Thread
+                                     , [Entity Message]
+                                     , [PlainTextPart]
+                                     , [(Entity ThreadTag, Entity Tag)])
+getThread threadId = do
+  labels <-
+    E.select
+      (E.from
+         (\(threadTag, tag) -> do
+            E.where_
+              ((threadTag E.^. ThreadTagThread E.==. E.val threadId) E.&&.
+               (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
+            pure (threadTag, tag)))
+  mapM_
+    Persistent.delete
+    (mapMaybe
+       (\(threadTag, tag) -> do
+          guard (tagLabel (entityVal tag) == Unread)
+          pure (entityKey threadTag))
+       labels)
+  mthread <- Persistent.get threadId
+  messages <- Persistent.selectList [MessageThread ==. threadId] [Persistent.Asc MessageReceived]
+  plainParts0 <-
+    fmap
+      (map entityVal)
+      (Persistent.selectList [PlainTextPartMessage <-. map entityKey messages] [])
+  plainParts <-
+    if null plainParts0
+      then fmap
+             (map (toPlainTextPart . entityVal))
+             (Persistent.selectList [HtmlPartMessage <-. map entityKey messages] [])
+      else pure plainParts0
+  pure (mthread, messages, plainParts, labels)
+
+toPlainTextPart :: HtmlPart -> PlainTextPart
+toPlainTextPart htmlPart =
+  PlainTextPart
+    { plainTextPartOrdering = htmlPartOrdering htmlPart
+    , plainTextPartMessage = htmlPartMessage htmlPart
+    , plainTextPartParent = htmlPartParent htmlPart
+    , plainTextPartContent =
+        T.unlines
+          (stripBlankLines
+             (dropWhile
+                T.null
+                (map
+                   T.strip
+                   (T.lines
+                      (T.concat
+                         (mapMaybe
+                            (\case
+                               NodeContent t -> Just t
+                               _ -> Nothing)
+                            (listify
+                               (const True)
+                               (everywhere
+                                  (mkT
+                                     (\case
+                                        NodeElement (Element {elementName = Name{nameLocalName = "style"}}) ->
+                                          NodeComment "Skipped style."
+                                        NodeElement (Element {elementName = Name{nameLocalName = "script"}}) ->
+                                          NodeComment "Skipped script."
+                                        e -> e))
+                                  (parseLT
+                                     (LT.fromStrict (htmlPartContent htmlPart)))))))))))
+    }
+  where
+    stripBlankLines (x:y:xs) =
+      if T.null x && T.null y
+        then stripBlankLines (y : xs)
+        else x : stripBlankLines (y : xs)
+    stripBlankLines x = x
