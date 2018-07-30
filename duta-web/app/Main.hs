@@ -17,7 +17,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Data.Function
-import           Data.Generics (listify)
+import           Data.Generics (mkT, everywhere, listify)
 import           Data.Graph
 import           Data.List
 import           Data.Maybe
@@ -502,13 +502,19 @@ toPlainTextPart htmlPart =
                          (mapMaybe
                             (\case
                                NodeContent t -> Just t
-                               NodeElement (Element {elementName = Name{nameLocalName = "style"}}) -> Nothing
-                               NodeElement (Element {elementName = Name{nameLocalName = "script"}}) -> Nothing
                                _ -> Nothing)
                             (listify
                                (const True)
-                               (parseLT
-                                  (LT.fromStrict (htmlPartContent htmlPart))))))))))
+                               (everywhere
+                                  (mkT
+                                     (\case
+                                        NodeElement (Element {elementName = Name{nameLocalName = "style"}}) ->
+                                          NodeComment "Skipped style."
+                                        NodeElement (Element {elementName = Name{nameLocalName = "script"}}) ->
+                                          NodeComment "Skipped script."
+                                        e -> e))
+                                  (parseLT
+                                     (LT.fromStrict (htmlPartContent htmlPart)))))))))))
     }
   where
     stripBlankLines (x:y:xs) =
