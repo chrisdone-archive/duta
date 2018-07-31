@@ -164,14 +164,23 @@ insertContent msgId mparent value =
                      , plainTextPartContent = text'
                      }))
            MIME.Text "html" ->
-             void
-               (Persistent.insert
-                  (HtmlPart
-                     { htmlPartOrdering = ordering
-                     , htmlPartMessage = msgId
-                     , htmlPartParent = mparent
-                     , htmlPartContent = text
-                     }))
+             do text' <-
+                  case T.decodeUtf8' (S8.pack (T.unpack text)) of
+                    Left e -> do
+                      logError
+                        ("Unable to parse string: " <> T.pack (show e) <>
+                         ", string was: " <>
+                         T.pack (show text))
+                      pure text
+                    Right t -> pure t
+                void
+                  (Persistent.insert
+                     (HtmlPart
+                        { htmlPartOrdering = ordering
+                        , htmlPartMessage = msgId
+                        , htmlPartParent = mparent
+                        , htmlPartContent = text'
+                        }))
            _ -> do
              void
                (Persistent.insert
@@ -340,13 +349,14 @@ toPlainTextPart htmlPart =
                                (everywhere
                                   (mkT
                                      (\case
-                                        NodeElement (Element {elementName = Name{nameLocalName = "style"}}) ->
+                                        NodeElement (Element {elementName = Name {nameLocalName = "style"}}) ->
                                           NodeComment "Skipped style."
-                                        NodeElement (Element {elementName = Name{nameLocalName = "script"}}) ->
+                                        NodeElement (Element {elementName = Name {nameLocalName = "script"}}) ->
                                           NodeComment "Skipped script."
                                         e -> e))
                                   (parseLT
-                                     (LT.fromStrict (htmlPartContent htmlPart)))))))))))
+                                     (LT.fromStrict
+                                        (htmlPartContent htmlPart)))))))))))
     }
   where
     stripBlankLines (x:y:xs) =
