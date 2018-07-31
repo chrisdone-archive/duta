@@ -87,3 +87,7 @@ a:visited {
 .main-actions a + a {
   margin-left: 1em;
 }
+.message-menu {
+  float: right;
+  margin-right: 1em;
+}

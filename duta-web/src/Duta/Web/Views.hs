@@ -130,6 +130,10 @@ viewThread labels (Entity threadId thread) forest plainParts url =
         (do div_
               [class_ "message-header"]
               (do timestamp_ (messageReceived message)
+                  div_ [class_ "message-menu"]
+                       (a_
+                          [href_ (url (OriginalR messageId))]
+                          "View Original")
                   div_
                     [class_ "message-from"]
                     (do strong_ "From: "
@@ -138,10 +142,7 @@ viewThread labels (Entity threadId thread) forest plainParts url =
                     [class_ "message-to"]
                     (do strong_ "To: "
                         toHtml (messageTo message))
-                  div_ [class_ "message-menu"]
-                       (a_
-                          [href_ (url (OriginalR messageId))]
-                          "View Original"))
+                  )
             div_
               [class_ "message-body"]
               (mapM_

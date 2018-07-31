@@ -46,7 +46,7 @@ main = do
            value 1)))
       empty
   manager <-
-    SiteManager <$> fmap T.pack (getEnv "USER") <*> fmap T.pack (getEnv "PASS")
+    SiteManager <$> fmap T.pack (getEnv "DUTA_USER") <*> fmap T.pack (getEnv "DUTA_PASS")
   runStdoutLoggingT
     (withPostgresqlPool
        connstr
