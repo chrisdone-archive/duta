@@ -35,6 +35,7 @@ mkYesodData "App" [parseRoutes|
   /thread/#ThreadId ThreadR GET
   /apply-label/#ThreadId/#Label ApplyLabelR GET
   /remove-label/#ThreadId/#Label RemoveLabelR GET
+  /original/#MessageId OriginalR GET
 |]
 
 mkEmbeddedStatic development "embeddedStatic" [embedDir "static"]

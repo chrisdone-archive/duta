@@ -107,9 +107,7 @@ viewThread labels (Entity threadId thread) forest plainParts url =
                                 "Mute"
                        if elem Deleted labels'
                          then a_
-                                [ href_
-                                    (url (RemoveLabelR threadId Deleted))
-                                ]
+                                [href_ (url (RemoveLabelR threadId Deleted))]
                                 "Undelete"
                          else a_
                                 [href_ (url (ApplyLabelR threadId Deleted))]
@@ -139,7 +137,11 @@ viewThread labels (Entity threadId thread) forest plainParts url =
                   div_
                     [class_ "message-to"]
                     (do strong_ "To: "
-                        toHtml (messageTo message)))
+                        toHtml (messageTo message))
+                  div_ [class_ "message-menu"]
+                       (a_
+                          [href_ (url (OriginalR messageId))]
+                          "View Original"))
             div_
               [class_ "message-body"]
               (mapM_

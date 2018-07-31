@@ -210,3 +210,10 @@ getRemoveLabelR tid label = do
   case label of
     Inbox -> redirect InboxR
     _ -> redirect (ThreadR tid)
+
+getOriginalR :: MessageId -> Handler RepPlain
+getOriginalR mid = do
+  morig <- runDB (selectFirst [OriginalMessageMessage ==. mid] [])
+  case morig of
+    Nothing -> notFound
+    Just (Entity _ o) -> pure (RepPlain (toContent (originalMessageContents o)))
