@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Main SMTP receiver program.
 
 module Main where
@@ -52,6 +54,12 @@ main = do
               , startOnMessage =
                   \bs msg -> do
                     now <- liftIO getCurrentTime
-                    withResource pool (runReaderT (insertModelMessage now msg bs))
+                    logDebug "Doing database insert."
+                    filterLogger
+                      (\_src _level -> False)
+                      (withResource
+                         pool
+                         (runReaderT (insertModelMessage now msg bs)))
+                    logDebug "Done database insert."
               , startPool = pool
               }))

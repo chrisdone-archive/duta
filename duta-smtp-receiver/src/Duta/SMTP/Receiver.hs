@@ -37,7 +37,6 @@ import qualified Data.Conduit.Network.Timeout as Connector
 import           Data.Monoid
 import           Data.Pool
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
 import           System.IO
@@ -155,16 +154,10 @@ interaction Interaction {..} = do
   receive_ (Atto8.string "DATA")
   interactionReply StartMailInput
   data' <- consume dottedParser
-  case T.decodeUtf8' data' of
-    Left e ->
-      logError
-        ("Unable to parse string: " <> T.pack (show e) <> ", string was: " <>
-         T.pack (show data'))
-    Right str -> do
-      lift (interactionOnMessage data' (parseMIMEMessage str))
-      interactionReply (Okay " OK")
-      receive_ (Atto8.string "QUIT")
-      interactionReply Closing
+  lift (interactionOnMessage data' (parseMIMEMessage (T.pack (S8.unpack data'))))
+  interactionReply (Okay " OK")
+  receive_ (Atto8.string "QUIT")
+  interactionReply Closing
 
 receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ p = receive p >> pure ()
