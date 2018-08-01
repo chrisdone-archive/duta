@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase #-}
@@ -26,6 +27,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Builder as L
 import qualified Data.ByteString.Search as S
+import           Data.Char
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.Attoparsec as CA
@@ -67,8 +69,14 @@ start Start {..} = do
     handler run appData =
       catch
         (do logInfo (wrap "CONNECT")
-            conduit
-            logInfo (wrap "SUCCESS"))
+            catch
+              (catch
+                 (do conduit
+                     logInfo (wrap "SUCCESS"))
+                 (\(x :: IOError) ->
+                    logError (wrap ("IOError: " <> T.pack (show x)))))
+              (\(x :: IOException) ->
+                 logError (wrap ("IOException: " <> T.pack (show x)))))
         (\case
            ClientQuitUnexpectedly -> logError (wrap "QUIT UNEXPECTEDLY")
            ClientTimeout -> logWarn (wrap "TIMED OUT")
@@ -86,7 +94,21 @@ start Start {..} = do
                 Connector.Finished -> throwM ClientQuitUnexpectedly
                 Connector.ReadWriteTimeout -> throwM ClientTimeout
             logger =
-              CL.mapM (\x -> x <$ logDebug (wrap "IN: " <> T.pack (show x)))
+              CL.mapM
+                (\x -> do
+                   liftIO (S.appendFile fp x)
+                   x <$
+                     logDebug
+                       (wrap "IN: " <>
+                        (T.pack (take 30 (show x)) <> " (" <>
+                         T.pack (show (S.length x)) <> " bytes)")))
+              where
+                fp =
+                  "transcript-" ++
+                  (map (\c -> if isAlphaNum c || c == '.'
+                                 then c
+                                 else '_') (show (Net.appSockAddr appData))) ++
+                  ".input"
             sink =
               interaction
                 Interaction
