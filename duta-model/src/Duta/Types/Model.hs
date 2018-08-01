@@ -21,7 +21,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Tag
     label Label
     title Text
-    applied UTCTime default=now()
+    applied UTCTime default=CURRENT_TIMESTAMP
     deriving Show
     deriving Eq
 
