@@ -11,8 +11,9 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/chrisdone/mime
-    commit: 8f3b9124abec95145b53849b48489129fe5c7368
+    commit: 155a8c6a85cda2f9a860e04f20b143c7250dde30
   extra-dep: true
+# - ../mime
 - location:
     git: https://github.com/bitemyapp/esqueleto.git
     commit: 08c9b4cdf977d5bcd1baba046a007940c1940758

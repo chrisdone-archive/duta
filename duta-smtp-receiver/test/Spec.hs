@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -11,7 +13,7 @@ import           Codec.MIME.Base64
 import           Codec.MIME.Parse
 import qualified Codec.MIME.QuotedPrintable as QP
 import           Codec.MIME.Type
-import           Control.Monad.Logger
+import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
@@ -149,7 +151,7 @@ writingToDb =
                                 Duta.SMTP.Receiver.Interaction
                                   { Duta.SMTP.Receiver.interactionHostname = ""
                                   , Duta.SMTP.Receiver.interactionOnMessage =
-                                      insertModelMessage now
+                                      \v o -> insertModelMessage now o v
                                   , Duta.SMTP.Receiver.interactionReply =
                                       C.yield
                                   } .|
@@ -179,7 +181,8 @@ integrationRegression = do
              Duta.SMTP.Receiver.interaction
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
-                 , Duta.SMTP.Receiver.interactionOnMessage = const (pure ())
+                 , Duta.SMTP.Receiver.interactionOnMessage =
+                     const (const (pure ()))
                  , Duta.SMTP.Receiver.interactionReply = C.yield
                  } .|
              CL.consume)
@@ -202,7 +205,8 @@ integrationRegression = do
           Duta.SMTP.Receiver.interaction
             Duta.SMTP.Receiver.Interaction
               { Duta.SMTP.Receiver.interactionHostname = ""
-              , Duta.SMTP.Receiver.interactionOnMessage = const (pure ())
+              , Duta.SMTP.Receiver.interactionOnMessage =
+                  const (const (pure ()))
               , Duta.SMTP.Receiver.interactionReply = C.yield
               } .|
           CL.consume

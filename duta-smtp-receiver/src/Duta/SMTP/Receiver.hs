@@ -36,6 +36,7 @@ import qualified Data.Conduit.Network as Net hiding (appSource, appSink)
 import qualified Data.Conduit.Network.Timeout as Connector
 import           Data.Monoid
 import           Data.Pool
+import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
@@ -45,7 +46,7 @@ import           System.IO
 -- Constants
 
 data DutaException
-  = ClientQuitUnexpectedly
+  = ClientQuitUnexpectedly Text
   | ClientTimeout
   | FailedToParseInput CA.ParseError (Maybe ByteString)
   deriving (Typeable, Show)
@@ -77,7 +78,7 @@ start Start {..} = do
               (\(x :: IOException) ->
                  logError (wrap ("IOException: " <> T.pack (show x)))))
         (\case
-           ClientQuitUnexpectedly -> logError (wrap "QUIT UNEXPECTEDLY")
+           ClientQuitUnexpectedly q -> logError (wrap ("QUIT UNEXPECTEDLY: " <> q))
            ClientTimeout -> logWarn (wrap "TIMED OUT")
            FailedToParseInput e inp ->
              logError
@@ -90,7 +91,7 @@ start Start {..} = do
             source = do
               reason <- Connector.appSource (Connector.defaultConnector appData)
               case reason of
-                Connector.Finished -> throwM ClientQuitUnexpectedly
+                Connector.Finished -> throwM (ClientQuitUnexpectedly "Finished")
                 Connector.ReadWriteTimeout -> throwM ClientTimeout
             logger =
               CL.mapM
@@ -145,33 +146,32 @@ interaction ::
   -> C.ConduitT ByteString c m ()
 interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
-  receive_ (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
+  receive_ "HELO/EHLO" (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
   interactionReply (Okay " OK")
-  _from <- receive (Atto8.string "MAIL FROM:")
+  _from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
   interactionReply (Okay " OK")
-  _to <- receive (Atto8.string "RCPT TO:")
+  _to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
   interactionReply (Okay " OK")
-  receive_ (Atto8.string "DATA")
+  receive_ "DATA" (Atto8.string "DATA")
   interactionReply StartMailInput
-  data' <- consume dottedParser
+  data' <- consume "dottedParser" dottedParser
   lift (interactionOnMessage data' (parseMIMEMessage (T.pack (S8.unpack data'))))
   interactionReply (Okay " OK")
-  receive_ (Atto8.string "QUIT")
+  receive_ "QUIT" (Atto8.string "QUIT")
   interactionReply Closing
 
-receive_ :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m ()
-receive_ p = receive p >> pure ()
+receive_ l p = receive l p >> pure ()
 
-receive :: (MonadThrow m) => Atto8.Parser a -> C.ConduitT ByteString c m a
-receive p =
-  consume (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n')
 
-consume :: (MonadThrow m) => Atto8.Parser a2 -> C.ConduitT ByteString c m a2
-consume p = do
+receive l p =
+  consume l (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n')
+
+consume :: (MonadThrow m) => Text -> Atto8.Parser a2 -> C.ConduitT ByteString c m a2
+consume l p = do
   r <- (CA.conduitParserEither p .| C.await)
   case r of
     Nothing -> do
-      throwM (ClientQuitUnexpectedly)
+      throwM (ClientQuitUnexpectedly l)
     Just result ->
       case result of
         Left err -> do
