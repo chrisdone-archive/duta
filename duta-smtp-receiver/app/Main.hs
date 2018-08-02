@@ -39,27 +39,29 @@ main = do
            long "max-db-connections" <>
            value 1)))
       empty
-  runStdoutLoggingT
+  runNoLoggingT
     (withPostgresqlPool
        connstr
        connections
-       (\pool -> do
-          withResource
-            pool
-            (runReaderT (runMigration Duta.Types.Model.migrateAll))
-          start
-            Start
-              { startHostname = host
-              , startPort = port
-              , startOnMessage =
-                  \bs msg -> do
-                    now <- liftIO getCurrentTime
-                    logDebug "Doing database insert."
-                    filterLogger
-                      (\_src _level -> False)
-                      (withResource
-                         pool
-                         (runReaderT (insertModelMessage now msg bs)))
-                    logDebug "Done database insert."
-              , startPool = pool
-              }))
+       (\pool ->
+          liftIO
+            (do withResource
+                  pool
+                  (runReaderT (runMigration Duta.Types.Model.migrateAll))
+                runStdoutLoggingT
+                  (start
+                     Start
+                       { startHostname = host
+                       , startPort = port
+                       , startOnMessage =
+                           \bs msg -> do
+                             now <- liftIO getCurrentTime
+                             logDebug "Doing database insert."
+                             filterLogger
+                               (\_src _level -> False)
+                               (withResource
+                                  pool
+                                  (runReaderT (insertModelMessage now msg bs)))
+                             logDebug "Done database insert."
+                       , startPool = pool
+                       }))))

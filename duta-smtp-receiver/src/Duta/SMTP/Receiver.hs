@@ -96,7 +96,7 @@ start Start {..} = do
             logger =
               CL.mapM
                 (\x -> do
-                   liftIO (S.appendFile fp x)
+                   -- liftIO (S.appendFile fp x)
                    x <$
                      logDebug
                        (wrap "IN: " <>
