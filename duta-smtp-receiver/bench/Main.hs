@@ -10,6 +10,8 @@ module Main where
 import           Codec.MIME.Parse
 import           Codec.MIME.Type
 import           Control.DeepSeq
+import           Criterion
+import           Criterion.Main
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
@@ -17,9 +19,9 @@ import           GHC.Generics
 
 main :: IO ()
 main = do
-  bytes <- S.readFile "558.txt"
-  let !_ = force (parseMIMEMessage (T.pack (S8.unpack bytes)))
-  putStrLn "OK!"
+  !t <- fmap (T.pack . S8.unpack) (S.readFile "558.txt")
+  defaultMain
+    [bgroup "parseMIMEMessage" [bench "558.txt" (nf parseMIMEMessage t)]]
 
 instance NFData MIMEValue
 deriving instance Generic MIMEValue
