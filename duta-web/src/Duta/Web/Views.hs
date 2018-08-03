@@ -63,9 +63,10 @@ viewThread ::
   -> Entity Thread
   -> [Tree (Message, Key Message, c)]
   -> [PlainTextPart]
+  -> [Attachment]
   -> (Route App -> Text)
   -> Html ()
-viewThread labels (Entity threadId thread) forest plainParts url =
+viewThread labels (Entity threadId thread) forest plainParts attachments url =
   doctypehtml_
     (do head_
           (do meta_ [charset_ "utf-8"]
@@ -130,10 +131,9 @@ viewThread labels (Entity threadId thread) forest plainParts url =
         (do div_
               [class_ "message-header"]
               (do timestamp_ (messageReceived message)
-                  div_ [class_ "message-menu"]
-                       (a_
-                          [href_ (url (OriginalR messageId))]
-                          "View Original")
+                  div_
+                    [class_ "message-menu"]
+                    (a_ [href_ (url (OriginalR messageId))] "View Original")
                   div_
                     [class_ "message-from"]
                     (do strong_ "From: "
@@ -141,8 +141,7 @@ viewThread labels (Entity threadId thread) forest plainParts url =
                   div_
                     [class_ "message-to"]
                     (do strong_ "To: "
-                        toHtml (messageTo message))
-                  )
+                        toHtml (messageTo message)))
             div_
               [class_ "message-body"]
               (mapM_

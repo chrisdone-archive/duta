@@ -320,13 +320,6 @@ getThreadsByQuery query = do
               threadsLabels))
        threads)
 
-data Attachment = Attachment
-  { attachmentBinaryPartId :: BinaryPartId
-  , attachmentMessageId :: MessageId
-  , attachmentName :: Maybe Text
-  , attachmentContentType :: Text
-  }
-
 getThread ::
      MonadIO m
   => ThreadId

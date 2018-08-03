@@ -89,3 +89,10 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Show
     deriving Eq
  |]
+
+data Attachment = Attachment
+  { attachmentBinaryPartId :: BinaryPartId
+  , attachmentMessageId :: MessageId
+  , attachmentName :: Maybe Text
+  , attachmentContentType :: Text
+  }
