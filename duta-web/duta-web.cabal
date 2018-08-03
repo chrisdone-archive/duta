@@ -20,6 +20,7 @@ library
     Duta.Web.Views
     Duta.Web.Controllers
     Duta.Web.Foundation
+  other-modules: Text.Links
   ghc-options:         -Wall
   build-depends:       base
                      , duta-smtp-receiver
@@ -36,6 +37,8 @@ library
                      , bytestring
                      , yesod-lucid
                      , persistent
+                     , network-uri
+                     , HUnit
                      , yesod-auth
                      , yesod-static
                      , yesod-core

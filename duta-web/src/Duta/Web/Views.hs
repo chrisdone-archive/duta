@@ -27,6 +27,7 @@ import           Duta.Types.Model
 import           Duta.Web.Foundation
 import           Duta.Web.Types
 import           Lucid
+import           Text.Links
 import           Yesod.Auth
 
 listThreads :: (Route App -> Text) -> [(Entity Thread, [Entity Tag])] -> Html ()
@@ -66,7 +67,7 @@ viewThread ::
   -> [Attachment]
   -> (Route App -> Text)
   -> Html ()
-viewThread labels (Entity threadId thread) forest plainParts attachments url =
+viewThread labels (Entity threadId thread) forest plainParts _attachments url =
   doctypehtml_
     (do head_
           (do meta_ [charset_ "utf-8"]
@@ -156,7 +157,20 @@ viewThread labels (Entity threadId thread) forest plainParts attachments url =
                                      then "text-quote"
                                      else "text-plain")
                               ]
-                              (sequence_ (intersperse (br_ []) (map toHtml ls))))
+                              (sequence_
+                                 (intersperse
+                                    (br_ [])
+                                    (map
+                                       (mconcat .
+                                        (map
+                                           (either
+                                              (\uri ->
+                                                 a_
+                                                   [href_ (T.pack (show uri)),rel_ "noreferrer"]
+                                                   (toHtml (show uri)))
+                                              toHtml) .
+                                         explodeLinks))
+                                       ls))))
                          (groupBy
                             (on (==) (T.isPrefixOf ">"))
                             (T.lines (plainTextPartContent plainTextPart)))))
