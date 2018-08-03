@@ -36,5 +36,6 @@ library
     esqueleto,
     xml-conduit,
     html-conduit,
-    syb
+    syb,
+    containers
   default-language:    Haskell2010

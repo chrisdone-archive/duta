@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8 as S8
 import           Data.Generics
 import           Data.Int
 import           Data.List
+import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Text (Text)
@@ -342,6 +343,12 @@ toPlainTextPart htmlPart =
                       (T.concat
                          (mapMaybe
                             (\case
+                               NodeElement (Element { elementName = Name {nameLocalName = "a"}
+                                                    , elementAttributes = attrs
+                                                    }) ->
+                                 fmap
+                                   (\link -> "<" <> link <> ">")
+                                   (M.lookup "href" attrs)
                                NodeContent t -> Just t
                                _ -> Nothing)
                             (listify
@@ -355,8 +362,7 @@ toPlainTextPart htmlPart =
                                           NodeComment "Skipped script."
                                         e -> e))
                                   (parseLT
-                                     (LT.fromStrict
-                                        (htmlPartContent htmlPart)))))))))))
+                                     (LT.fromStrict (htmlPartContent htmlPart)))))))))))
     }
   where
     stripBlankLines (x:y:xs) =
