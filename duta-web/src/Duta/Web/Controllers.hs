@@ -151,7 +151,7 @@ getSpamR = do
 
 getThreadR :: ThreadId -> Handler LucidHtml
 getThreadR threadId = do
-  (mthread, messages, plainParts, labels) <- runDB (getThread threadId)
+  (mthread, messages, plainParts, _, labels) <- runDB (getThread threadId)
   let (g, v2n, k2v) =
         graphFromEdges
           (map
@@ -173,8 +173,7 @@ getThreadR threadId = do
   case mthread of
     Nothing -> notFound
     Just thread ->
-      lucid
-        (viewThread labels (Entity threadId thread) forest plainParts)
+      lucid (viewThread labels (Entity threadId thread) forest plainParts)
 
 getApplyLabelR :: ThreadId -> Label -> Handler ()
 getApplyLabelR tid label = do

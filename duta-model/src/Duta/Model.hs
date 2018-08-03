@@ -320,13 +320,20 @@ getThreadsByQuery query = do
               threadsLabels))
        threads)
 
+data Attachment = Attachment
+  { attachmentBinaryPartId :: BinaryPartId
+  , attachmentMessageId :: MessageId
+  , attachmentName :: Maybe Text
+  , attachmentContentType :: Text
+  }
+
 getThread ::
      MonadIO m
   => ThreadId
   -> ReaderT Persistent.SqlBackend m ( Maybe Thread
                                      , [Entity Message]
                                      , [PlainTextPart]
-                                     , [BinaryPart]
+                                     , [Attachment]
                                      , [(Entity ThreadTag, Entity Tag)])
 getThread threadId = do
   labels <-
@@ -364,10 +371,26 @@ getThread threadId = do
                 [])
       else pure plainParts0
   binaryParts <-
-    fmap
-      (map entityVal)
-      (Persistent.selectList [BinaryPartMessage <-. map entityKey messages] [])
-  pure (mthread, messages, plainParts, binaryParts, labels)
+    E.select
+      (E.from
+         (\binaryPart -> do
+            E.where_
+              (binaryPart E.^. BinaryPartMessage `E.in_`
+               E.valList (map entityKey messages))
+            pure
+              ( binaryPart E.^. BinaryPartId
+              , binaryPart E.^. BinaryPartMessage
+              , binaryPart E.^. BinaryPartName
+              , binaryPart E.^. BinaryPartContentType)))
+  pure
+    ( mthread
+    , messages
+    , plainParts
+    , map
+        (\((E.Value b), (E.Value m), (E.Value n), (E.Value c)) ->
+           Attachment b m n c)
+        binaryParts
+    , labels)
 
 toPlainTextPart :: HtmlPart -> PlainTextPart
 toPlainTextPart htmlPart =
