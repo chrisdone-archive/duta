@@ -343,6 +343,10 @@ toPlainTextPart htmlPart =
                       (T.concat
                          (mapMaybe
                             (\case
+                               NodeElement (Element {elementName = Name {nameLocalName = "p"}}) ->
+                                 Just "\n"
+                               NodeElement (Element {elementName = Name {nameLocalName = "br"}}) ->
+                                 Just "\n"
                                NodeElement (Element { elementName = Name {nameLocalName = "a"}
                                                     , elementAttributes = attrs
                                                     }) ->
