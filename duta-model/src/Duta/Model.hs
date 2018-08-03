@@ -6,6 +6,7 @@
 module Duta.Model where
 
 import qualified Codec.MIME.Type as MIME
+import           Control.Applicative
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
@@ -145,56 +146,86 @@ insertContent msgId mparent value =
     MIME.Single text -> do
       ordering <- getOrder
       lift
-        (case MIME.mimeType (MIME.mime_val_type value) of
-           MIME.Text "plain" -> do
-             text' <-
-               case T.decodeUtf8' (S8.pack (T.unpack text)) of
-                 Left e -> do
-                   logError
-                     ("Unable to parse string: " <> T.pack (show e) <>
-                      ", string was: " <>
-                      T.pack (show text))
-                   pure text
-                 Right t -> pure t
-             void
-               (Persistent.insert
-                  (PlainTextPart
-                     { plainTextPartOrdering = ordering
-                     , plainTextPartMessage = msgId
-                     , plainTextPartParent = mparent
-                     , plainTextPartContent = text'
-                     }))
-           MIME.Text "html" ->
-             do text' <-
-                  case T.decodeUtf8' (S8.pack (T.unpack text)) of
-                    Left e -> do
-                      logError
-                        ("Unable to parse string: " <> T.pack (show e) <>
-                         ", string was: " <>
-                         T.pack (show text))
-                      pure text
-                    Right t -> pure t
-                void
-                  (Persistent.insert
-                     (HtmlPart
-                        { htmlPartOrdering = ordering
-                        , htmlPartMessage = msgId
-                        , htmlPartParent = mparent
-                        , htmlPartContent = text'
-                        }))
-           _ -> do
-             void
-               (Persistent.insert
-                  (BinaryPart
-                     { binaryPartOrdering = ordering
-                     , binaryPartMessage = msgId
-                     , binaryPartParent = mparent
-                     , binaryPartContentType =
-                         MIME.showType (MIME.mime_val_type value)
-                     , binaryPartContent = T.encodeUtf8 text
-                     })))
+        (do let binaryPart =
+                  void
+                    (Persistent.insert
+                       (BinaryPart
+                          { binaryPartOrdering = ordering
+                          , binaryPartMessage = msgId
+                          , binaryPartParent = mparent
+                          , binaryPartAttachment = mimeValueIsAttachment value
+                          , binaryPartName = mimeValueFileName value
+                          , binaryPartContentType =
+                              MIME.showType (MIME.mime_val_type value)
+                          , binaryPartContent = T.encodeUtf8 text
+                          }))
+            if mimeValueIsAttachment value
+              then binaryPart
+              else case MIME.mimeType (MIME.mime_val_type value) of
+                     MIME.Text "plain" -> do
+                       text' <-
+                         case T.decodeUtf8' (S8.pack (T.unpack text)) of
+                           Left e -> do
+                             logError
+                               ("Unable to parse string: " <> T.pack (show e) <>
+                                ", string was: " <>
+                                T.pack (show text))
+                             pure text
+                           Right t -> pure t
+                       void
+                         (Persistent.insert
+                            (PlainTextPart
+                               { plainTextPartOrdering = ordering
+                               , plainTextPartMessage = msgId
+                               , plainTextPartParent = mparent
+                               , plainTextPartContent = text'
+                               }))
+                     MIME.Text "html" -> do
+                       text' <-
+                         case T.decodeUtf8' (S8.pack (T.unpack text)) of
+                           Left e -> do
+                             logError
+                               ("Unable to parse string: " <> T.pack (show e) <>
+                                ", string was: " <>
+                                T.pack (show text))
+                             pure text
+                           Right t -> pure t
+                       void
+                         (Persistent.insert
+                            (HtmlPart
+                               { htmlPartOrdering = ordering
+                               , htmlPartMessage = msgId
+                               , htmlPartParent = mparent
+                               , htmlPartContent = text'
+                               }))
+                     _ -> binaryPart)
   where
     getOrder = get <* modify incOrder
+
+-- | Is the mime value an attachment?
+mimeValueIsAttachment :: MIME.MIMEValue -> Bool
+mimeValueIsAttachment =
+  maybe False ((== MIME.DispAttachment) . MIME.dispType) . MIME.mime_val_disp
+
+-- | Lookup a filename, assuming it's an attachment.
+mimeValueFileName :: MIME.MIMEValue -> Maybe Text
+mimeValueFileName value = viaContentType <|> viaDisposition
+  where
+    viaContentType =
+      fmap
+        MIME.paramValue
+        (find
+           ((== "name") . MIME.paramName)
+           (MIME.mimeParams (MIME.mime_val_type value)))
+    viaDisposition = do
+      disp <- MIME.mime_val_disp value
+      let params = MIME.dispParams disp
+      listToMaybe
+        (mapMaybe
+           (\case
+              MIME.Filename fp -> Just fp
+              _ -> Nothing)
+           params)
 
 lookupHeader :: MonadThrow f => Text -> MIME.MIMEValue -> f Text
 lookupHeader label value =
@@ -295,6 +326,7 @@ getThread ::
   -> ReaderT Persistent.SqlBackend m ( Maybe Thread
                                      , [Entity Message]
                                      , [PlainTextPart]
+                                     , [BinaryPart]
                                      , [(Entity ThreadTag, Entity Tag)])
 getThread threadId = do
   labels <-
@@ -313,18 +345,29 @@ getThread threadId = do
           pure (entityKey threadTag))
        labels)
   mthread <- Persistent.get threadId
-  messages <- Persistent.selectList [MessageThread ==. threadId] [Persistent.Asc MessageReceived]
+  messages <-
+    Persistent.selectList
+      [MessageThread ==. threadId]
+      [Persistent.Asc MessageReceived]
   plainParts0 <-
     fmap
       (map entityVal)
-      (Persistent.selectList [PlainTextPartMessage <-. map entityKey messages] [])
+      (Persistent.selectList
+         [PlainTextPartMessage <-. map entityKey messages]
+         [])
   plainParts <-
     if null plainParts0
       then fmap
              (map (toPlainTextPart . entityVal))
-             (Persistent.selectList [HtmlPartMessage <-. map entityKey messages] [])
+             (Persistent.selectList
+                [HtmlPartMessage <-. map entityKey messages]
+                [])
       else pure plainParts0
-  pure (mthread, messages, plainParts, labels)
+  binaryParts <-
+    fmap
+      (map entityVal)
+      (Persistent.selectList [BinaryPartMessage <-. map entityKey messages] [])
+  pure (mthread, messages, plainParts, binaryParts, labels)
 
 toPlainTextPart :: HtmlPart -> PlainTextPart
 toPlainTextPart htmlPart =

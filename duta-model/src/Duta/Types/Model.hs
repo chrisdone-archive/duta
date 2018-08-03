@@ -77,7 +77,9 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     message MessageId
     parent MultiPartId Maybe
     contentType Text
+    name Text Maybe
     content ByteString
+    attachment Bool default=TRUE
     deriving Show
     deriving Eq
 
