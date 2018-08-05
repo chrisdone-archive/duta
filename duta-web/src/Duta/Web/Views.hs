@@ -166,7 +166,9 @@ viewThread labels (Entity threadId thread) forest plainParts _attachments url =
                                            (either
                                               (\uri ->
                                                  a_
-                                                   [href_ (T.pack (show uri)),rel_ "noreferrer"]
+                                                   [ href_ (T.pack (show uri))
+                                                   , rel_ "noreferrer"
+                                                   ]
                                                    (toHtml (show uri)))
                                               toHtml) .
                                          explodeLinks))
