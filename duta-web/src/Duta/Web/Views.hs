@@ -56,7 +56,9 @@ listThreads url labelledThreads = do
                [ class_ ("thread-preview-link " <> unreadClass)
                , href_ (url (ThreadR threadId))
                ]
-               (toHtml (threadSubject thread))))
+               (toHtml (if T.null (threadSubject thread)
+                           then "No subject"
+                           else threadSubject thread))))
     labelledThreads
 
 viewThread ::
