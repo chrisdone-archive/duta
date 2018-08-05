@@ -73,6 +73,7 @@ viewThread labels (Entity threadId thread) forest plainParts _attachments url =
   doctypehtml_
     (do head_
           (do meta_ [charset_ "utf-8"]
+              title_ (toHtml (threadSubject thread))
               link_
                 [ rel_ "stylesheet"
                 , type_ "text/css"
