@@ -143,7 +143,7 @@ writingToDb =
                (withSqliteConnInfo
                   (mkSqliteConnectionInfo ":memory:")
                   (runReaderT
-                     (do _ <- runMigration Duta.Types.Model.migrateAll
+                     (do _ <- runMigrationSilent Duta.Types.Model.migrateAll
                          replies <-
                            C.runConduit
                              (CL.sourceList gmailInput .|
