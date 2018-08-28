@@ -171,6 +171,7 @@ viewThread labels (Entity threadId thread) forest plainParts _attachments url =
                                                  a_
                                                    [ href_ (T.pack (show uri))
                                                    , rel_ "noreferrer"
+                                                   , target_ "_blank"
                                                    ]
                                                    (toHtml (show uri)))
                                               toHtml) .
