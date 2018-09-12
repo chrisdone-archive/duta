@@ -16,6 +16,7 @@ import           Control.Monad
 import           Data.Function
 import           Data.Graph
 import           Data.List
+import qualified Data.Map.Strict as M
 import           Data.Monoid
 import           Data.Ord
 import           Data.Text (Text)
@@ -152,34 +153,46 @@ viewThread labels (Entity threadId thread) forest plainParts _attachments url =
                  (\plainTextPart ->
                     div_
                       [class_ "plain-text-part"]
-                      (mapM_
-                         (\ls ->
-                            div_
-                              [ class_
-                                  (if any (T.isPrefixOf ">") ls
-                                     then "text-quote"
-                                     else "text-plain")
-                              ]
-                              (sequence_
-                                 (intersperse
-                                    (br_ [])
-                                    (map
-                                       (mconcat .
+                      (let isQuote = T.isPrefixOf ">"
+                           groups =
+                             M.fromList
+                               (zip
+                                  [1 :: Int ..]
+                                  (groupBy
+                                     (on (==) isQuote)
+                                     (T.lines
+                                        (plainTextPartContent plainTextPart))))
+                        in mapM_
+                             (\(i, ls) ->
+                                div_
+                                  [ class_
+                                      (if any isQuote ls
+                                         then ("text-quote " <>
+                                               case M.lookup (i + 1) groups of
+                                                 Just t
+                                                   | any isQuote t -> ""
+                                                 _ -> "text-quote-last")
+                                         else "text-plain")
+                                  ]
+                                  (sequence_
+                                     (intersperse
+                                        (br_ [])
                                         (map
-                                           (either
-                                              (\uri ->
-                                                 a_
-                                                   [ href_ (T.pack (show uri))
-                                                   , rel_ "noreferrer"
-                                                   , target_ "_blank"
-                                                   ]
-                                                   (toHtml (show uri)))
-                                              toHtml) .
-                                         explodeLinks))
-                                       ls))))
-                         (groupBy
-                            (on (==) (T.isPrefixOf ">"))
-                            (T.lines (plainTextPartContent plainTextPart)))))
+                                           (mconcat .
+                                            (map
+                                               (either
+                                                  (\uri ->
+                                                     a_
+                                                       [ href_
+                                                           (T.pack (show uri))
+                                                       , rel_ "noreferrer"
+                                                       , target_ "_blank"
+                                                       ]
+                                                       (toHtml (show uri)))
+                                                  toHtml) .
+                                             explodeLinks))
+                                           ls))))
+                             (M.toList groups)))
                  myParts))
       where
         myParts =

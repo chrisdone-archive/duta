@@ -74,8 +74,11 @@ a:visited {
 .text-quote {
   color: #666;
 }
+.text-quote-last {
+  height: 1em;
+  overflow: hidden;
+}
 .topnav {
-
 }
 .menu-logout {
   float: right;
