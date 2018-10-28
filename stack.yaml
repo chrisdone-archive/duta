@@ -11,7 +11,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/chrisdone/mime
-    commit: 155a8c6a85cda2f9a860e04f20b143c7250dde30
+    commit: a27a1bcded423b3096d0e9432d9f9acb7f718b0a
   extra-dep: true
 # - ../mime
 - location:
