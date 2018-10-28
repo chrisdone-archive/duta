@@ -119,7 +119,23 @@ spec = do
                       \        at src/JSDOM/Custom/XMLHttpRequest.hs:38:1-53\n\
                       \    • In the second argument of ‘(.)’, namely ‘throwM’\n\
                       \      In the second argument of ‘maybe’, namely ‘(liftDOM . throwM)’\n\
-                      \      In the expression: maybe (return ()) (liftDOM . throwM)"))
+                      \      In the expression: maybe (return ()) (liftDOM . throwM)")
+        it
+          "QuotedPrintable parser ending in ="
+          (shouldBe
+             (T.decodeUtf8
+                (S8.pack
+                   (QP.decode
+                      "xxxxx xxxxxxxxx xx xx xxxxxx xxx xxxxx xx xx xxxxx xxxx xxxx xxxxxxxx =\n\
+                      \xxxx. xxxxx xxx xxxx xxxxxxxxx, xxxxxx xxxxxxx xxx xxxxxxxxxxxxxx xxxx =\n\
+                      \xxx xx xx. x'xx xx xxxxxxx xx xxxxxxxxxx xxxxxxxxx xxxxx xxxx xx xxxx, =\n\
+                      \xxx xx xxx xxx xxxxx xx xxx xxxxxxxxx xxxx xxxx xx xx xxxxxxxxx, xxxxxx =\n\
+                      \xxxx xx xx xxxxx.=")))
+             "xxxxx xxxxxxxxx xx xx xxxxxx xxx xxxxx xx xx xxxxx xxxx xxxx xxxxxxxx \
+              \xxxx. xxxxx xxx xxxx xxxxxxxxx, xxxxxx xxxxxxx xxx xxxxxxxxxxxxxx xxxx \
+              \xxx xx xx. x'xx xx xxxxxxx xx xxxxxxxxxx xxxxxxxxx xxxxx xxxx xx xxxx, \
+              \xxx xx xxx xxx xxxxx xx xxx xxxxxxxxx xxxx xxxx xx xx xxxxxxxxx, xxxxxx \
+              \xxxx xx xx xxxxx."))
 
 writingToDb :: Spec
 writingToDb =
