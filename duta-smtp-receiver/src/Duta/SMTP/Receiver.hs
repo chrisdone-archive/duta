@@ -10,6 +10,7 @@ module Duta.SMTP.Receiver
     , interaction
     , Interaction(..)
     , Reply (..)
+    , FromTo (..)
     ) where
 
 import           Codec.MIME.Parse
@@ -55,7 +56,7 @@ instance Exception DutaException
 data Start m = Start
   { startHostname :: String
   , startPort :: Int
-  , startOnMessage :: ByteString -> MIMEValue -> m ()
+  , startOnMessage :: FromTo -> ByteString -> MIMEValue -> m ()
   , startPool :: Pool SqlBackend
   }
 
@@ -103,7 +104,7 @@ start Start {..} = do
                         (T.pack (take 30 (show x)) <> " (" <>
                          T.pack (show (S.length x)) <> " bytes)")))
               where
-                fp =
+                _fp =
                   "transcript-" ++
                   (map (\c -> if isAlphaNum c || c == '.'
                                  then c
@@ -134,9 +135,11 @@ makeReply appData rep = do
     Connector.ReadWriteTimeout -> throwM ClientTimeout
     Connector.Finished -> pure ()
 
+data FromTo = FromTo ByteString ByteString
+
 data Interaction c m = Interaction
   { interactionHostname :: String
-  , interactionOnMessage :: ByteString -> MIMEValue -> m ()
+  , interactionOnMessage :: FromTo -> ByteString -> MIMEValue -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
   }
 
@@ -148,21 +151,23 @@ interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
   receive_ "HELO/EHLO" (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
   interactionReply (Okay " OK")
-  _from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
+  from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
   interactionReply (Okay " OK")
-  _to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
+  to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
   interactionReply (Okay " OK")
   receive_ "DATA" (Atto8.string "DATA")
   interactionReply StartMailInput
   data' <- consume "dottedParser" dottedParser
-  lift (interactionOnMessage data' (parseMIMEMessage (T.pack (S8.unpack data'))))
+  lift (interactionOnMessage (FromTo from to) data' (parseMIMEMessage (T.pack (S8.unpack data'))))
   interactionReply (Okay " OK")
   receive_ "QUIT" (Atto8.string "QUIT")
   interactionReply Closing
 
+receive_ :: MonadThrow m => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()
 
 
+receive :: MonadThrow m => Text -> Atto8.Parser a2 -> C.ConduitT ByteString c m a2
 receive l p =
   consume l (p <* Atto8.takeWhile (/= '\n') <* Atto8.char '\n')
 

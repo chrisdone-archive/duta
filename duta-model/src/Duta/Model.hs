@@ -41,13 +41,16 @@ instance Exception ModelError
 -- | Insert a message, mapping it to any existing thread.
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
-  => UTCTime
+  => ByteString
+  -> ByteString
+  -> UTCTime
   -> MIME.MIMEValue
   -> ByteString
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage received value original = do
-  from <- lookupHeader "from" value
-  to <- lookupHeader "to" value
+insertModelMessage from0 to0 received value original = do
+  -- TODO: Handle error case of decodeUf8.
+  let from = fromMaybe (T.decodeUtf8 from0) (lookupHeader "from" value)
+  let to = fromMaybe (T.decodeUtf8 to0) (lookupHeader "to" value)
   subject <- lookupHeader "subject" value
   (threadId, mparentId) <- getThreadId subject value
   msgId <-

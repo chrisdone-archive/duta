@@ -54,7 +54,7 @@ main = do
                        { startHostname = host
                        , startPort = port
                        , startOnMessage =
-                           \bs msg -> do
+                           \(From from to) bs msg -> do
                              now <- liftIO getCurrentTime
                              logDebug "Doing database insert."
                              filterLogger
