@@ -38,7 +38,7 @@ getInboxR = do
         runDB
           (getThreadsByQuery
              Query
-               {queryLimit = 30, queryIncludeLabels = [Inbox], queryExcludeLabels = [Deleted]})
+               {queryLimit = 1000, queryIncludeLabels = [Inbox], queryExcludeLabels = [Deleted]})
       lucid
         (\url ->
            doctypehtml_
