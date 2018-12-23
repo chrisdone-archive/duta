@@ -41,36 +41,37 @@ spec :: Spec
 spec = do
   describe
     "Libraries"
-    (describe
-       "mime package"
-       (do it
-             "Codec.MIME.Base64: example roundtrip"
-             (shouldBe
-                (let Single s =
-                       mime_val_content $
-                       parseMIMEMessage $
-                       "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
-                       T.pack (formatOutput 76 Nothing (encodeRaw True image))
-                  in S8.pack (T.unpack s))
-                (S.pack image))
-           -- The mime package is a bit out of a date and uses String
-           -- and Text where a ByteString would be more
-           -- appropriate. Due to many conversions, it's not clear
-           -- that this will always be correct. Hence, we have a
-           -- property test for the roundtrip encode.decode==id.
-           it
-             "Codec.MIME.Base64: quickcheck roundtrip"
-             (property
-                (\bytes ->
-                   shouldBe
-                     (let Single s =
-                            mime_val_content $
-                            parseMIMEMessage $
-                            "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
-                            T.pack
-                              (formatOutput 76 Nothing (encodeRaw True bytes))
-                       in S8.pack (T.unpack s))
-                     (S.pack bytes)))))
+    (do describe "rfc2047 non-ascii text" rfc2047NonAscii
+        describe
+          "mime package"
+          (do it
+                "Codec.MIME.Base64: example roundtrip"
+                (shouldBe
+                   (let Single s =
+                          mime_val_content $
+                          parseMIMEMessage $
+                          "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
+                          T.pack (formatOutput 76 Nothing (encodeRaw True image))
+                     in S8.pack (T.unpack s))
+                   (S.pack image))
+              -- The mime package is a bit out of a date and uses String
+              -- and Text where a ByteString would be more
+              -- appropriate. Due to many conversions, it's not clear
+              -- that this will always be correct. Hence, we have a
+              -- property test for the roundtrip encode.decode==id.
+              it
+                "Codec.MIME.Base64: quickcheck roundtrip"
+                (property
+                   (\bytes ->
+                      shouldBe
+                        (let Single s =
+                               mime_val_content $
+                               parseMIMEMessage $
+                               "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" <>
+                               T.pack
+                                 (formatOutput 76 Nothing (encodeRaw True bytes))
+                          in S8.pack (T.unpack s))
+                        (S.pack bytes)))))
   describe
     "Integration"
     (do integrationRegression
@@ -136,6 +137,43 @@ spec = do
               \xxx xx xx. x'xx xx xxxxxxx xx xxxxxxxxxx xxxxxxxxx xxxxx xxxx xx xxxx, \
               \xxx xx xxx xxx xxxxx xx xxx xxxxxxxxx xxxx xxxx xx xx xxxxxxxxx, xxxxxx \
               \xxxx xx xx xxxxx."))
+
+rfc2047NonAscii :: Spec
+rfc2047NonAscii = do
+  it
+    "Sample"
+    (do pending
+        shouldBe "=?utf-8?q?Scopri_GLC_da_290_=E2=82=AC_al_mese?=" "")
+  it
+    "Sample"
+    (do pending
+        shouldBe
+          "=?utf-8?B?5ZOl5Lym5q+U5LqaIOepuua0vuWPjOa4heWMheeojiDpnIfm?= =?utf-8?B?krzmnaXooq0=?="
+          "")
+  it
+    "Sample"
+    (do pending
+        shouldBe
+          "=?utf-8?B?5aKo6KW/5ZOlRkJB56m65rS+5Y+M5riF5YyF56iOIOebtOmA?= =?utf-8?B?muS6mumprOmAiuS7k+W6kw==?="
+          "")
+  it
+    "Sample"
+    (do pending
+        shouldBe
+          "=?utf-8?B?QXVzdHJhbGlhbiBzaGlwcGluZyBsaW5lIOWcqOWPjeeJqei0?= =?utf-8?B?qOS6keS4rSDov5norrDlv4bomb3nhLbpgZfkvKDkuoblh6Dnmb7ku6Mg?= =?utf-8?B??="
+          "")
+  it
+    "Sample"
+    (do pending
+        shouldBe
+          "=?utf-8?B?UHJvZmVzc2lvbmFsIGludGVybmF0aW9uYWwgYWlyIHRyYW5z?= =?utf-8?B?cG9ydCxleHByZXNzLHNoaXBwaW5nIOmaj+edgOabtOWkmueahOiDvemH?= =?utf-8?B?j+S7pemdnuWPr+ingeWFieW9ouW8j+a6ouWHuuaBkuaYnyDnp4Dnp4Dl?= =?utf-8?B?j6/lgJLpnInkuoYg?="
+          "")
+  it
+    "Sample"
+    (do pending
+        shouldBe
+          "=?utf-8?B?5aKo6KW/5ZOlRkJB56m65rS+5Y+M5riF5YyF56iOIOebtOmA?= =?utf-8?B?muS6mumprOmAiuS7k+W6kw==?="
+          "")
 
 writingToDb :: Spec
 writingToDb =
