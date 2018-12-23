@@ -54,14 +54,14 @@ main = do
                        { startHostname = host
                        , startPort = port
                        , startOnMessage =
-                           \(From from to) bs msg -> do
+                           \(FromTo from to) bs msg -> do
                              now <- liftIO getCurrentTime
                              logDebug "Doing database insert."
                              filterLogger
                                (\_src _level -> False)
                                (withResource
                                   pool
-                                  (runReaderT (insertModelMessage now msg bs)))
+                                  (runReaderT (insertModelMessage from to now msg bs)))
                              logDebug "Done database insert."
                        , startPool = pool
                        }))))
