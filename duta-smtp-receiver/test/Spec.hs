@@ -9,6 +9,7 @@
 
 module Main (main) where
 
+import           Duta.Model
 import           Codec.MIME.Base64
 import           Codec.MIME.Parse
 import qualified Codec.MIME.QuotedPrintable as QP
@@ -28,7 +29,6 @@ import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Word
 import           Database.Persist.Sqlite hiding (Single)
-import           Duta.Model
 import qualified Duta.SMTP.Receiver
 import qualified Duta.Types.Model
 import           Test.Hspec
@@ -147,12 +147,15 @@ writingToDb =
            let message' =
                  Duta.Types.Model.Message
                    { Duta.Types.Model.messageReceived = now
-                   , Duta.Types.Model.messageFrom = "Christopher Done <chrisdone@gmail.com>"
+                   , Duta.Types.Model.messageFrom =
+                       "Christopher Done <chrisdone@gmail.com>"
                    , Duta.Types.Model.messageTo = "wibble@chrisdone.com"
                    , Duta.Types.Model.messageSubject = "Re: wibbling"
                    , Duta.Types.Model.messageParent = Nothing
                    , Duta.Types.Model.messageThread = toSqlKey 1
-                   , Duta.Types.Model.messageIdentifier = Just "<CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com>"
+                   , Duta.Types.Model.messageIdentifier =
+                       Just
+                         "<CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com>"
                    }
            (replies, inserted) <-
              runNoLoggingT
@@ -167,7 +170,8 @@ writingToDb =
                                 Duta.SMTP.Receiver.Interaction
                                   { Duta.SMTP.Receiver.interactionHostname = ""
                                   , Duta.SMTP.Receiver.interactionOnMessage =
-                                      \v o -> insertModelMessage now o v
+                                      \(Duta.SMTP.Receiver.FromTo from to) bs msg ->
+                                        insertModelMessage from to now msg bs
                                   , Duta.SMTP.Receiver.interactionReply =
                                       C.yield
                                   } .|
@@ -198,7 +202,7 @@ integrationRegression = do
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
                  , Duta.SMTP.Receiver.interactionOnMessage =
-                     const (const (pure ()))
+                     \_ _ _ -> pure ()
                  , Duta.SMTP.Receiver.interactionReply = C.yield
                  } .|
              CL.consume)
@@ -222,7 +226,7 @@ integrationRegression = do
             Duta.SMTP.Receiver.Interaction
               { Duta.SMTP.Receiver.interactionHostname = ""
               , Duta.SMTP.Receiver.interactionOnMessage =
-                  const (const (pure ()))
+                  \_ _ _ -> pure ()
               , Duta.SMTP.Receiver.interactionReply = C.yield
               } .|
           CL.consume
