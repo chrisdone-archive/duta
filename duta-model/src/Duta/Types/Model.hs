@@ -21,13 +21,14 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
   Tag
     label Label
     title Text
-    applied UTCTime default=CURRENT_TIMESTAMP
+    created UTCTime default=CURRENT_TIMESTAMP
     deriving Show
     deriving Eq
 
   ThreadTag
     thread ThreadId
     tag TagId
+    applied UTCTime default=CURRENT_TIMESTAMP
     deriving Show
     deriving Eq
 

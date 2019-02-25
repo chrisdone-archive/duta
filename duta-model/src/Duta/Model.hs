@@ -239,8 +239,9 @@ lookupHeader label value =
 labelThread :: MonadIO m => Label -> ThreadId -> ReaderT Persistent.SqlBackend m ()
 labelThread label threadId = do
   tagId <- getLabelTagId label
+  now <- liftIO getCurrentTime
   void (Persistent.deleteWhere [ThreadTagThread ==. threadId, ThreadTagTag ==. tagId])
-  void (Persistent.insert (ThreadTag threadId tagId))
+  void (Persistent.insert (ThreadTag threadId tagId now))
 
 unlabelThread ::
      MonadIO m => Label -> ThreadId -> ReaderT Persistent.SqlBackend m ()
@@ -259,7 +260,7 @@ newTagFromLabel :: MonadIO m =>  Label -> ReaderT Persistent.SqlBackend m TagId
 newTagFromLabel l = do
   now <- liftIO getCurrentTime
   Persistent.insert
-    (Tag {tagLabel = l, tagTitle = labelTitle l, tagApplied = now})
+    (Tag {tagLabel = l, tagTitle = labelTitle l, tagCreated = now})
 
 data Query = Query
   { queryIncludeLabels :: [Label]
