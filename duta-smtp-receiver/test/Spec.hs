@@ -22,7 +22,6 @@ import qualified Data.ByteString.Char8 as S8
 import           Data.Conduit ((.|))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
-import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
