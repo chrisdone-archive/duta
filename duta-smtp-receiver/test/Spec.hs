@@ -28,7 +28,7 @@ import           Data.Time
 import           Data.Word
 import           Database.Persist.Sqlite hiding (Single)
 import           Duta.Model
-import           Duta.SMTP.RFC2047
+import           Duta.RFC2047
 import qualified Duta.SMTP.Receiver
 import qualified Duta.Types.Model
 

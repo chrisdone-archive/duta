@@ -19,7 +19,6 @@ import           Data.Int
 import           Data.List
 import qualified Data.Map.Strict as M
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -28,6 +27,7 @@ import           Data.Time
 import qualified Database.Esqueleto as E
 import           Database.Persist (Entity, (+=.), (<-.), (=.), (==.), Entity(..))
 import qualified Database.Persist.Sqlite as Persistent
+import           Duta.RFC2047
 import           Duta.Types.Label
 import           Duta.Types.Model
 import           Duta.Types.Order
@@ -51,7 +51,7 @@ insertModelMessage from0 to0 received value original = do
   -- TODO: Handle error case of decodeUf8.
   let from = fromMaybe (T.decodeUtf8 from0) (lookupHeader "from" value)
   let to = fromMaybe (T.decodeUtf8 to0) (lookupHeader "to" value)
-  subject <- lookupHeader "subject" value
+  subject <- fmap (decodeRFC2047 . T.encodeUtf8) (lookupHeader "subject" value)
   (threadId, mparentId) <- getThreadId subject value
   msgId <-
     Persistent.insert

@@ -14,6 +14,7 @@ library
   ghc-options:         -Wall
   exposed-modules:
     Duta.Types.Model
+    Duta.RFC2047
     Duta.Types.Order
     Duta.Model
   build-depends:
@@ -37,5 +38,6 @@ library
     xml-conduit,
     html-conduit,
     syb,
-    containers
+    containers,
+    email-header
   default-language:    Haskell2010
