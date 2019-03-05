@@ -164,6 +164,11 @@ interaction Interaction {..} = do
   receive_ "QUIT" (ciByteString "QUIT")
   interactionReply Closing
 
+-- https://tools.ietf.org/html/rfc5321
+-- Although EHLO keywords may be specified in upper, lower, or mixed
+-- case, they MUST always be recognized and processed in a case-
+-- insensitive manner.  This is simply an extension of practices
+-- specified in RFC 821 and Section 2.4.
 ciByteString :: ByteString -> Atto8.Parser ByteString
 ciByteString i0 =
   Atto8.scan
