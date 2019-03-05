@@ -277,6 +277,40 @@ integrationRegression = do
           , Duta.SMTP.Receiver.Okay " OK"
           , Duta.SMTP.Receiver.Closing
           ])
+  it
+    "Regression test against Exim"
+    (do xs <-
+          runNoLoggingT
+            (C.runConduit $
+             CL.sourceList eximInput .|
+             Duta.SMTP.Receiver.interaction
+               Duta.SMTP.Receiver.Interaction
+                 { Duta.SMTP.Receiver.interactionHostname = ""
+                 , Duta.SMTP.Receiver.interactionOnMessage =
+                     \_ _ _ -> pure ()
+                 , Duta.SMTP.Receiver.interactionReply = C.yield
+                 } .|
+             CL.consume)
+        shouldBe
+          xs
+          [ Duta.SMTP.Receiver.ServiceReady ""
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.StartMailInput
+          , Duta.SMTP.Receiver.Okay " OK"
+          , Duta.SMTP.Receiver.Closing
+          ])
+
+eximInput :: [ByteString]
+eximInput =
+  [ "EHLO mail-qk0-f170.google.com\r\n"
+  , "MAIL From:<chrisdone@gmail.com>\r\n"
+  , "RCPT To:<wibble@chrisdone.com>\r\n"
+  , "DATA\r\n"
+  , T.encodeUtf8 gmailMessage
+  , "QUIT\r\n"
+  ]
 
 gmailInput :: [ByteString]
 gmailInput =
