@@ -96,7 +96,7 @@ start Start {..} = do
             logger =
               CL.mapM
                 (\x -> do
-                   liftIO (S.appendFile (fp appData) x)
+                   -- liftIO (S.appendFile (fp appData) x)
                    x <$
                      logDebug
                        (wrap "IN: " <>
@@ -118,7 +118,7 @@ makeReply appData rep = do
       (C.yield (L.toStrict (L.toLazyByteString (buildReply rep <> "\r\n"))) .|
        CL.mapM
          (\x -> do
-            liftIO (S.appendFile (fp appData) x)
+            -- liftIO (S.appendFile (fp appData) x)
             x <$
              logDebug
                (T.pack (show (Net.appSockAddr appData)) <> ": OUT: " <>
@@ -128,13 +128,13 @@ makeReply appData rep = do
     Connector.ReadWriteTimeout -> throwM ClientTimeout
     Connector.Finished -> pure ()
 
-fp :: Net.AppData -> FilePath
-fp appData =
-  "transcript-" ++
-  (map (\c -> if isAlphaNum c || c == '.'
-                 then c
-                 else '_') (show (Net.appSockAddr appData))) ++
-  ".txt"
+-- fp :: Net.AppData -> FilePath
+-- fp appData =
+--   "transcript-" ++
+--   (map (\c -> if isAlphaNum c || c == '.'
+--                  then c
+--                  else '_') (show (Net.appSockAddr appData))) ++
+--   ".txt"
 
 data FromTo = FromTo ByteString ByteString
 
@@ -150,19 +150,29 @@ interaction ::
   -> C.ConduitT ByteString c m ()
 interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
-  receive_ "HELO/EHLO" (Atto8.choice [Atto8.string "EHLO", Atto8.string "HELO"])
+  receive_ "HELO/EHLO" (Atto8.choice [ciByteString "EHLO", ciByteString "HELO"])
   interactionReply (Okay " OK")
-  from <- receive "MAIL FROM" (Atto8.string "MAIL FROM:")
+  from <- receive "MAIL FROM" (ciByteString "MAIL FROM:")
   interactionReply (Okay " OK")
-  to <- receive "RCPT TO" (Atto8.string "RCPT TO:")
+  to <- receive "RCPT TO" (ciByteString "RCPT TO:")
   interactionReply (Okay " OK")
-  receive_ "DATA" (Atto8.string "DATA")
+  receive_ "DATA" (ciByteString "DATA")
   interactionReply StartMailInput
   data' <- consume "dottedParser" dottedParser
   lift (interactionOnMessage (FromTo from to) data' (parseMIMEMessage (T.pack (S8.unpack data'))))
   interactionReply (Okay " OK")
-  receive_ "QUIT" (Atto8.string "QUIT")
+  receive_ "QUIT" (ciByteString "QUIT")
   interactionReply Closing
+
+ciByteString :: ByteString -> Atto8.Parser ByteString
+ciByteString i0 =
+  Atto8.scan
+    i0
+    (\i w8 -> do
+       (c, cs) <- S8.uncons i
+       guard (toUpper c == toUpper w8)
+       pure cs)
+{-# INLINE ciByteString #-}
 
 receive_ :: MonadThrow m => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()
