@@ -1,6 +1,7 @@
 resolver: lts-12.12
 
 packages:
+- spf
 - duta-smtp-receiver
 - duta-web
 - duta-types
@@ -18,3 +19,6 @@ packages:
     git: https://github.com/bitemyapp/esqueleto.git
     commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
   extra-dep: true
+
+extra-deps:
+- email-header-0.4.1@sha256:3d501fb7cb4cc0af743105d65076fe1637687ba7e8477d84c28b9235d82be414

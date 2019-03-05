@@ -9,7 +9,6 @@
 
 module Main (main) where
 
-import           Duta.Model
 import           Codec.MIME.Base64
 import           Codec.MIME.Parse
 import qualified Codec.MIME.QuotedPrintable as QP
@@ -28,8 +27,11 @@ import qualified Data.Text.Encoding as T
 import           Data.Time
 import           Data.Word
 import           Database.Persist.Sqlite hiding (Single)
+import           Duta.Model
+import           Duta.SMTP.RFC2047
 import qualified Duta.SMTP.Receiver
 import qualified Duta.Types.Model
+
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -140,39 +142,16 @@ spec = do
 rfc2047NonAscii :: Spec
 rfc2047NonAscii = do
   it
-    "Sample"
-    (do pending
-        shouldBe "=?utf-8?q?Scopri_GLC_da_290_=E2=82=AC_al_mese?=" "")
+    "Italian"
+    (shouldBe
+       (decodeRFC2047 "=?utf-8?q?Scopri_GLC_da_290_=E2=82=AC_al_mese?=")
+       "Scopri GLC da 290 \8364 al mese")
   it
-    "Sample"
-    (do pending
-        shouldBe
-          "=?utf-8?B?5ZOl5Lym5q+U5LqaIOepuua0vuWPjOa4heWMheeojiDpnIfm?= =?utf-8?B?krzmnaXooq0=?="
-          "")
-  it
-    "Sample"
-    (do pending
-        shouldBe
-          "=?utf-8?B?5aKo6KW/5ZOlRkJB56m65rS+5Y+M5riF5YyF56iOIOebtOmA?= =?utf-8?B?muS6mumprOmAiuS7k+W6kw==?="
-          "")
-  it
-    "Sample"
-    (do pending
-        shouldBe
-          "=?utf-8?B?QXVzdHJhbGlhbiBzaGlwcGluZyBsaW5lIOWcqOWPjeeJqei0?= =?utf-8?B?qOS6keS4rSDov5norrDlv4bomb3nhLbpgZfkvKDkuoblh6Dnmb7ku6Mg?= =?utf-8?B??="
-          "")
-  it
-    "Sample"
-    (do pending
-        shouldBe
-          "=?utf-8?B?UHJvZmVzc2lvbmFsIGludGVybmF0aW9uYWwgYWlyIHRyYW5z?= =?utf-8?B?cG9ydCxleHByZXNzLHNoaXBwaW5nIOmaj+edgOabtOWkmueahOiDvemH?= =?utf-8?B?j+S7pemdnuWPr+ingeWFieW9ouW8j+a6ouWHuuaBkuaYnyDnp4Dnp4Dl?= =?utf-8?B?j6/lgJLpnInkuoYg?="
-          "")
-  it
-    "Sample"
-    (do pending
-        shouldBe
-          "=?utf-8?B?5aKo6KW/5ZOlRkJB56m65rS+5Y+M5riF5YyF56iOIOebtOmA?= =?utf-8?B?muS6mumprOmAiuS7k+W6kw==?="
-          "")
+    "Chinese"
+    (shouldBe
+       (decodeRFC2047
+          "=?utf-8?B?5ZOl5Lym5q+U5LqaIOepuua0vuWPjOa4heWMheeojiDpnIfm?= =?utf-8?B?krzmnaXooq0=?=")
+       "\21733\20262\27604\20122 \31354\27966\21452\28165\21253\31246 \38663\65533\65533\65533\26469\34989")
 
 writingToDb :: Spec
 writingToDb =
