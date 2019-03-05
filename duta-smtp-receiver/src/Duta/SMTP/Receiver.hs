@@ -35,7 +35,6 @@ import qualified Data.Conduit.Attoparsec as CA
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as Net hiding (appSource, appSink)
 import qualified Data.Conduit.Network.Timeout as Connector
-import           Data.Monoid
 import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -97,19 +96,12 @@ start Start {..} = do
             logger =
               CL.mapM
                 (\x -> do
-                   -- liftIO (S.appendFile fp x)
+                   liftIO (S.appendFile (fp appData) x)
                    x <$
                      logDebug
                        (wrap "IN: " <>
                         (T.pack (take 30 (show x)) <> " (" <>
                          T.pack (show (S.length x)) <> " bytes)")))
-              where
-                _fp =
-                  "transcript-" ++
-                  (map (\c -> if isAlphaNum c || c == '.'
-                                 then c
-                                 else '_') (show (Net.appSockAddr appData))) ++
-                  ".input"
             sink =
               interaction
                 Interaction
@@ -125,15 +117,24 @@ makeReply appData rep = do
     C.runConduit
       (C.yield (L.toStrict (L.toLazyByteString (buildReply rep <> "\r\n"))) .|
        CL.mapM
-         (\x ->
+         (\x -> do
+            liftIO (S.appendFile (fp appData) x)
             x <$
-            logDebug
-              (T.pack (show (Net.appSockAddr appData)) <> ": OUT: " <>
-               T.pack (take 60 (show x)))) .|
+             logDebug
+               (T.pack (show (Net.appSockAddr appData)) <> ": OUT: " <>
+                T.pack (show x))) .|
        Connector.appSink (Connector.defaultConnector appData))
   case reason of
     Connector.ReadWriteTimeout -> throwM ClientTimeout
     Connector.Finished -> pure ()
+
+fp :: Net.AppData -> FilePath
+fp appData =
+  "transcript-" ++
+  (map (\c -> if isAlphaNum c || c == '.'
+                 then c
+                 else '_') (show (Net.appSockAddr appData))) ++
+  ".txt"
 
 data FromTo = FromTo ByteString ByteString
 
@@ -165,7 +166,6 @@ interaction Interaction {..} = do
 
 receive_ :: MonadThrow m => Text -> Atto8.Parser a -> C.ConduitT ByteString c m ()
 receive_ l p = receive l p >> pure ()
-
 
 receive :: MonadThrow m => Text -> Atto8.Parser a2 -> C.ConduitT ByteString c m a2
 receive l p =
