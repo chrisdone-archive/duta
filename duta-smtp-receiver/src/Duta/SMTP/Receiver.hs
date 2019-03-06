@@ -41,6 +41,7 @@ import           Data.Time
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
 import           Duta.Types.Letter
+import           Network.Socket
 import           System.IO
 
 --------------------------------------------------------------------------------
@@ -50,6 +51,7 @@ data DutaException
   = ClientQuitUnexpectedly Text
   | ClientTimeout
   | FailedToParseInput CA.ParseError (Maybe ByteString)
+  | InvalidAddr
   deriving (Typeable, Show)
 instance Exception DutaException
 
@@ -81,6 +83,7 @@ start Start {..} = do
         (\case
            ClientQuitUnexpectedly q -> logError (wrap ("QUIT UNEXPECTEDLY: " <> q))
            ClientTimeout -> logWarn (wrap "TIMED OUT")
+           InvalidAddr -> logError (wrap "INVALID ADDR")
            FailedToParseInput e inp ->
              logError
                (wrap
@@ -105,12 +108,16 @@ start Start {..} = do
                          T.pack (show (S.length x)) <> " bytes)")))
             sink =
               do now <- liftIO getCurrentTime
+                 ip <- case Net.appSockAddr appData of
+                         SockAddrInet _prt ip -> pure (S8.pack (show ip))
+                         _ -> throwM InvalidAddr
                  interaction
                    Interaction
                      { interactionHostname = startHostname
                      , interactionReply = liftIO . run . makeReply appData
                      , interactionOnMessage = startOnMessage
                      , interactionTime = now
+                     , interactionIp = ip
                      }
         wrap s = T.pack (show (Net.appSockAddr appData)) <> ": " <> T.take 60 s
 
@@ -144,6 +151,7 @@ data Interaction c m = Interaction
   , interactionOnMessage :: Letter -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
   , interactionTime :: UTCTime
+  , interactionIp :: ByteString
   }
 
 interaction ::
@@ -169,6 +177,7 @@ interaction Interaction {..} = do
           , letterFrom = from
           , letterTo = to
           , letterReceived = interactionTime
+          , letterIp = interactionIp
           }))
   interactionReply (Okay " OK")
   receive_ "QUIT" (ciByteString "QUIT")

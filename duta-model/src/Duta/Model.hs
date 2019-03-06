@@ -43,7 +43,7 @@ insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => Letter
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage (Letter from0 to0 original value received) = do
+insertModelMessage (Letter from0 to0 original value received ip) = do
   -- TODO: Handle error case of decodeUf8.
   let from = fromMaybe (T.decodeUtf8 from0) (lookupHeader "from" value)
   let to = fromMaybe (T.decodeUtf8 to0) (lookupHeader "to" value)
@@ -59,6 +59,7 @@ insertModelMessage (Letter from0 to0 original value received) = do
          , messageThread = threadId
          , messageParent = mparentId
          , messageIdentifier = lookupHeader "message-id" value
+         , messageIp = T.decodeUtf8 ip
          })
   now <- liftIO getCurrentTime
   Persistent.update threadId [ThreadUpdated =. now, ThreadMessages +=. 1]

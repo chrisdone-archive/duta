@@ -169,6 +169,7 @@ writingToDb =
                    , Duta.Types.Model.messageSubject = "Re: wibbling"
                    , Duta.Types.Model.messageParent = Nothing
                    , Duta.Types.Model.messageThread = toSqlKey 1
+                   , Duta.Types.Model.messageIp = "127.0.0.1"
                    , Duta.Types.Model.messageIdentifier =
                        Just
                          "<CAAJHNPCnR2LVyN+Ns5TauNTC9Gb1hVnUHGD8+fKstAqm_5yvQA@mail.gmail.com>"
@@ -185,6 +186,7 @@ writingToDb =
                               Duta.SMTP.Receiver.interaction
                                 Duta.SMTP.Receiver.Interaction
                                   { Duta.SMTP.Receiver.interactionHostname = ""
+                                  , Duta.SMTP.Receiver.interactionIp = "127.0.0.1"
                                   , Duta.SMTP.Receiver.interactionOnMessage =
                                       insertModelMessage
                                   , Duta.SMTP.Receiver.interactionReply =
@@ -218,6 +220,7 @@ integrationRegression = do
              Duta.SMTP.Receiver.interaction
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
+                 , Duta.SMTP.Receiver.interactionIp = "127.0.0.1"
                  , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
                  , Duta.SMTP.Receiver.interactionReply = C.yield
                  , Duta.SMTP.Receiver.interactionTime = now
@@ -243,6 +246,7 @@ integrationRegression = do
           Duta.SMTP.Receiver.interaction
             Duta.SMTP.Receiver.Interaction
               { Duta.SMTP.Receiver.interactionHostname = ""
+              , Duta.SMTP.Receiver.interactionIp = "127.0.0.1"
               , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
               , Duta.SMTP.Receiver.interactionReply = C.yield
               , Duta.SMTP.Receiver.interactionTime = now
@@ -268,6 +272,7 @@ integrationRegression = do
              Duta.SMTP.Receiver.interaction
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
+                 , Duta.SMTP.Receiver.interactionIp = "127.0.0.1"
                  , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
                  , Duta.SMTP.Receiver.interactionReply = C.yield
                  , Duta.SMTP.Receiver.interactionTime = now

@@ -48,6 +48,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     from Text
     to Text
     subject Text
+    ip Text
     deriving Show
     deriving Eq
 

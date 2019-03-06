@@ -41,6 +41,7 @@ library
                        resource-pool,
                        mime,
                        email-header
+                     , network
   default-language:    Haskell2010
 
 executable duta-smtp-receiver

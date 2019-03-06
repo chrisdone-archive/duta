@@ -13,4 +13,5 @@ data Letter =
     , letterPayload :: ByteString
     , letterMimeValue :: MIMEValue
     , letterReceived :: UTCTime
+    , letterIp :: ByteString
     }
