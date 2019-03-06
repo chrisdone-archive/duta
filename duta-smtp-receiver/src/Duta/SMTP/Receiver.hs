@@ -81,7 +81,8 @@ start Start {..} = do
               (\(x :: IOException) ->
                  logError (wrap ("IOException: " <> T.pack (show x)))))
         (\case
-           ClientQuitUnexpectedly q -> logError (wrap ("QUIT UNEXPECTEDLY: " <> q))
+           ClientQuitUnexpectedly q ->
+             logError (wrap ("QUIT UNEXPECTEDLY: " <> q))
            ClientTimeout -> logWarn (wrap "TIMED OUT")
            InvalidAddr -> logError (wrap "INVALID ADDR")
            FailedToParseInput e inp ->
@@ -99,26 +100,34 @@ start Start {..} = do
                 Connector.ReadWriteTimeout -> throwM ClientTimeout
             logger =
               CL.mapM
-                (\x -> do
+                (\x
                    -- liftIO (S.appendFile (fp appData) x)
+                  -> do
                    x <$
                      logDebug
                        (wrap "IN: " <>
                         (T.pack (take 30 (show x)) <> " (" <>
-                         T.pack (show (S.length x)) <> " bytes)")))
-            sink =
-              do now <- liftIO getCurrentTime
-                 ip <- case Net.appSockAddr appData of
-                         SockAddrInet _prt ip -> pure (S8.pack (show ip))
-                         _ -> throwM InvalidAddr
-                 interaction
-                   Interaction
-                     { interactionHostname = startHostname
-                     , interactionReply = liftIO . run . makeReply appData
-                     , interactionOnMessage = startOnMessage
-                     , interactionTime = now
-                     , interactionIp = ip
-                     }
+                         T.pack (show (S.length x)) <>
+                         " bytes)")))
+            sink = do
+              now <- liftIO getCurrentTime
+              ip <-
+                case Net.appSockAddr appData of
+                  SockAddrInet _prt ip ->
+                    pure
+                      (let (a, b, c, d) = hostAddressToTuple ip
+                        in S8.intercalate
+                             "."
+                             (map (S8.pack . show) [a, b, c, d]))
+                  _ -> throwM InvalidAddr
+              interaction
+                Interaction
+                  { interactionHostname = startHostname
+                  , interactionReply = liftIO . run . makeReply appData
+                  , interactionOnMessage = startOnMessage
+                  , interactionTime = now
+                  , interactionIp = ip
+                  }
         wrap s = T.pack (show (Net.appSockAddr appData)) <> ": " <> T.take 60 s
 
 makeReply :: (MonadIO m, MonadThrow m, MonadLogger m) => Net.AppData -> Reply -> m ()
