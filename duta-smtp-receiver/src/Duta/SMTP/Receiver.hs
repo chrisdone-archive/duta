@@ -10,11 +10,10 @@ module Duta.SMTP.Receiver
     , interaction
     , Interaction(..)
     , Reply (..)
-    , FromTo (..)
+    , Letter (..)
     ) where
 
 import           Codec.MIME.Parse
-import           Codec.MIME.Type
 import           Control.Exception hiding (catch)
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
@@ -38,8 +37,10 @@ import qualified Data.Conduit.Network.Timeout as Connector
 import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Time
 import           Data.Typeable
 import           Database.Persist.Sql.Types.Internal
+import           Duta.Types.Letter
 import           System.IO
 
 --------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ instance Exception DutaException
 data Start m = Start
   { startHostname :: String
   , startPort :: Int
-  , startOnMessage :: FromTo -> ByteString -> MIMEValue -> m ()
+  , startOnMessage :: Letter -> m ()
   , startPool :: Pool SqlBackend
   }
 
@@ -103,12 +104,14 @@ start Start {..} = do
                         (T.pack (take 30 (show x)) <> " (" <>
                          T.pack (show (S.length x)) <> " bytes)")))
             sink =
-              interaction
-                Interaction
-                  { interactionHostname = startHostname
-                  , interactionReply = liftIO . run . makeReply appData
-                  , interactionOnMessage = startOnMessage
-                  }
+              do now <- liftIO getCurrentTime
+                 interaction
+                   Interaction
+                     { interactionHostname = startHostname
+                     , interactionReply = liftIO . run . makeReply appData
+                     , interactionOnMessage = startOnMessage
+                     , interactionTime = now
+                     }
         wrap s = T.pack (show (Net.appSockAddr appData)) <> ": " <> T.take 60 s
 
 makeReply :: (MonadIO m, MonadThrow m, MonadLogger m) => Net.AppData -> Reply -> m ()
@@ -136,12 +139,11 @@ makeReply appData rep = do
 --                  else '_') (show (Net.appSockAddr appData))) ++
 --   ".txt"
 
-data FromTo = FromTo ByteString ByteString
-
 data Interaction c m = Interaction
   { interactionHostname :: String
-  , interactionOnMessage :: FromTo -> ByteString -> MIMEValue -> m ()
+  , interactionOnMessage :: Letter -> m ()
   , interactionReply :: Reply -> C.ConduitT ByteString c m ()
+  , interactionTime :: UTCTime
   }
 
 interaction ::
@@ -159,7 +161,15 @@ interaction Interaction {..} = do
   receive_ "DATA" (ciByteString "DATA")
   interactionReply StartMailInput
   data' <- consume "dottedParser" dottedParser
-  lift (interactionOnMessage (FromTo from to) data' (parseMIMEMessage (T.pack (S8.unpack data'))))
+  lift
+    (interactionOnMessage
+       (Letter
+          { letterPayload = data'
+          , letterMimeValue = parseMIMEMessage (T.pack (S8.unpack data'))
+          , letterFrom = from
+          , letterTo = to
+          , letterReceived = interactionTime
+          }))
   interactionReply (Okay " OK")
   receive_ "QUIT" (ciByteString "QUIT")
   interactionReply Closing

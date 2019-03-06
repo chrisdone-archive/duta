@@ -186,10 +186,10 @@ writingToDb =
                                 Duta.SMTP.Receiver.Interaction
                                   { Duta.SMTP.Receiver.interactionHostname = ""
                                   , Duta.SMTP.Receiver.interactionOnMessage =
-                                      \(Duta.SMTP.Receiver.FromTo from to) bs msg ->
-                                        insertModelMessage from to now msg bs
+                                      insertModelMessage
                                   , Duta.SMTP.Receiver.interactionReply =
                                       C.yield
+                                  , Duta.SMTP.Receiver.interactionTime = now
                                   } .|
                               CL.consume)
                          inserted <- selectList [] []
@@ -210,16 +210,17 @@ integrationRegression :: Spec
 integrationRegression = do
   it
     "Regression test against GMail"
-    (do xs <-
+    (do now <- getCurrentTime
+        xs <-
           runNoLoggingT
             (C.runConduit $
              CL.sourceList gmailInput .|
              Duta.SMTP.Receiver.interaction
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
-                 , Duta.SMTP.Receiver.interactionOnMessage =
-                     \_ _ _ -> pure ()
+                 , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
                  , Duta.SMTP.Receiver.interactionReply = C.yield
+                 , Duta.SMTP.Receiver.interactionTime = now
                  } .|
              CL.consume)
         shouldBe
@@ -234,16 +235,17 @@ integrationRegression = do
           ])
   it
     "Regression test against Postfix"
-    (do xs <-
+    (do now <- getCurrentTime
+        xs <-
           runNoLoggingT $
           C.runConduit $
           CL.sourceList postfixInput .|
           Duta.SMTP.Receiver.interaction
             Duta.SMTP.Receiver.Interaction
               { Duta.SMTP.Receiver.interactionHostname = ""
-              , Duta.SMTP.Receiver.interactionOnMessage =
-                  \_ _ _ -> pure ()
+              , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
               , Duta.SMTP.Receiver.interactionReply = C.yield
+              , Duta.SMTP.Receiver.interactionTime = now
               } .|
           CL.consume
         shouldBe
@@ -258,16 +260,17 @@ integrationRegression = do
           ])
   it
     "Regression test against Exim"
-    (do xs <-
+    (do now <- getCurrentTime
+        xs <-
           runNoLoggingT
             (C.runConduit $
              CL.sourceList eximInput .|
              Duta.SMTP.Receiver.interaction
                Duta.SMTP.Receiver.Interaction
                  { Duta.SMTP.Receiver.interactionHostname = ""
-                 , Duta.SMTP.Receiver.interactionOnMessage =
-                     \_ _ _ -> pure ()
+                 , Duta.SMTP.Receiver.interactionOnMessage = \_ -> pure ()
                  , Duta.SMTP.Receiver.interactionReply = C.yield
+                 , Duta.SMTP.Receiver.interactionTime = now
                  } .|
              CL.consume)
         shouldBe

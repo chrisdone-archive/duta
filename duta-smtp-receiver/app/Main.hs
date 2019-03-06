@@ -8,9 +8,7 @@ import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
-import           Data.Monoid
 import           Data.Pool
-import           Data.Time
 import           Database.Persist.Postgresql
 import           Duta.Model
 import           Duta.SMTP.Receiver
@@ -54,14 +52,13 @@ main = do
                        { startHostname = host
                        , startPort = port
                        , startOnMessage =
-                           \(FromTo from to) bs msg -> do
-                             now <- liftIO getCurrentTime
+                           \letter -> do
                              logDebug "Doing database insert."
                              filterLogger
                                (\_src _level -> False)
                                (withResource
                                   pool
-                                  (runReaderT (insertModelMessage from to now msg bs)))
+                                  (runReaderT (insertModelMessage letter)))
                              logDebug "Done database insert."
                        , startPool = pool
                        }))))

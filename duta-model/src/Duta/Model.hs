@@ -12,7 +12,6 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Control.Monad.State
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S8
 import           Data.Generics
 import           Data.Int
@@ -29,6 +28,7 @@ import           Database.Persist (Entity, (+=.), (<-.), (=.), (==.), Entity(..)
 import qualified Database.Persist.Sqlite as Persistent
 import           Duta.RFC2047
 import           Duta.Types.Label
+import           Duta.Types.Letter
 import           Duta.Types.Model
 import           Duta.Types.Order
 import           Text.HTML.DOM
@@ -41,13 +41,9 @@ instance Exception ModelError
 -- | Insert a message, mapping it to any existing thread.
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
-  => ByteString
-  -> ByteString
-  -> UTCTime
-  -> MIME.MIMEValue
-  -> ByteString
+  => Letter
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage from0 to0 received value original = do
+insertModelMessage (Letter from0 to0 original value received) = do
   -- TODO: Handle error case of decodeUf8.
   let from = fromMaybe (T.decodeUtf8 from0) (lookupHeader "from" value)
   let to = fromMaybe (T.decodeUtf8 to0) (lookupHeader "to" value)
