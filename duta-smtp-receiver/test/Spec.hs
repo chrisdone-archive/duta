@@ -163,9 +163,11 @@ writingToDb =
            let message' =
                  Duta.Types.Model.Message
                    { Duta.Types.Model.messageReceived = now
-                   , Duta.Types.Model.messageFrom =
-                       "Christopher Done <chrisdone@gmail.com>"
-                   , Duta.Types.Model.messageTo = "wibble@chrisdone.com"
+                   , Duta.Types.Model.messageFromHeader =
+                       Just "Christopher Done <chrisdone@gmail.com>"
+                   , Duta.Types.Model.messageToHeader = Just "wibble@chrisdone.com"
+                   , Duta.Types.Model.messageMailFrom = "chrisdone@gmail.com"
+                   , Duta.Types.Model.messageRcptTo = "wibble@chrisdone.com"
                    , Duta.Types.Model.messageSubject = "Re: wibbling"
                    , Duta.Types.Model.messageParent = Nothing
                    , Duta.Types.Model.messageThread = toSqlKey 1
@@ -186,7 +188,8 @@ writingToDb =
                               Duta.SMTP.Receiver.interaction
                                 Duta.SMTP.Receiver.Interaction
                                   { Duta.SMTP.Receiver.interactionHostname = ""
-                                  , Duta.SMTP.Receiver.interactionIp = "127.0.0.1"
+                                  , Duta.SMTP.Receiver.interactionIp =
+                                      "127.0.0.1"
                                   , Duta.SMTP.Receiver.interactionOnMessage =
                                       insertModelMessage
                                   , Duta.SMTP.Receiver.interactionReply =

@@ -50,7 +50,7 @@ data SpfRequest =
   SpfRequest
     { spfRequestIpV4 :: !ByteString
     , spfRequestHeloDomain :: !ByteString
-    , spfRequestFrom :: !ByteString
+    , spfRequestFromAddress :: !ByteString
     }
 
 -- | Make an SPF request and return a simple enum type.
@@ -65,7 +65,7 @@ makeSpfRequest (SpfServer fptr) req =
             (spfRequestIpV4 req)
             (\ipv4 ->
                S.useAsCString
-                 (spfRequestFrom req)
+                 (spfRequestFromAddress req)
                  (\sender ->
                     S.useAsCString
                       (spfRequestHeloDomain req)

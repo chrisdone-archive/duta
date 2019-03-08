@@ -17,7 +17,7 @@ import           Data.Function
 import           Data.Graph
 import           Data.List
 import qualified Data.Map.Strict as M
-import           Data.Monoid
+import           Data.Maybe
 import           Data.Ord
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -142,11 +142,17 @@ viewThread labels (Entity threadId thread) forest plainParts _attachments url =
                   div_
                     [class_ "message-from"]
                     (do strong_ "From: "
-                        toHtml (messageFrom message))
+                        toHtml
+                          (fromMaybe
+                             (messageMailFrom message)
+                             (messageFromHeader message)))
                   div_
                     [class_ "message-to"]
                     (do strong_ "To: "
-                        toHtml (messageTo message)))
+                        toHtml
+                          (fromMaybe
+                             (messageRcptTo message)
+                             (messageToHeader message))))
             div_
               [class_ "message-body"]
               (mapM_

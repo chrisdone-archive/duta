@@ -45,8 +45,10 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     thread ThreadId
     parent MessageId Maybe
     identifier Text Maybe
-    from Text
-    to Text
+    mailFrom Text
+    rcptTo Text
+    fromHeader Text Maybe
+    toHeader Text Maybe
     subject Text
     ip Text
     deriving Show

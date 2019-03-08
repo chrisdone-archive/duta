@@ -9,6 +9,6 @@ main = do
       (Spf.SpfRequest
          { Spf.spfRequestIpV4 = "130.211.0.0"
          , Spf.spfRequestHeloDomain = "mail.gmail.com"
-         , Spf.spfRequestFrom = "gmail.com"
+         , Spf.spfRequestFromAddress = "gmail.com"
          })
   print result

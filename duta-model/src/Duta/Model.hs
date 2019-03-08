@@ -44,17 +44,16 @@ insertModelMessage ::
   => Letter
   -> ReaderT Persistent.SqlBackend m ()
 insertModelMessage (Letter from0 to0 original value received ip) = do
-  -- TODO: Handle error case of decodeUf8.
-  let from = fromMaybe (T.decodeUtf8 from0) (lookupHeader "from" value)
-  let to = fromMaybe (T.decodeUtf8 to0) (lookupHeader "to" value)
   subject <- fmap (decodeRFC2047 . T.encodeUtf8) (lookupHeader "subject" value)
   (threadId, mparentId) <- getThreadId subject value
   msgId <-
     Persistent.insert
       (Message
          { messageReceived = received
-         , messageFrom = from
-         , messageTo = to
+         , messageFromHeader = lookupHeader "from" value
+         , messageToHeader = lookupHeader "to" value
+         , messageMailFrom = T.decodeUtf8 from0
+         , messageRcptTo = T.decodeUtf8 to0
          , messageSubject = subject
          , messageThread = threadId
          , messageParent = mparentId

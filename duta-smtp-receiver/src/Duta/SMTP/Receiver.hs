@@ -171,9 +171,9 @@ interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
   receive_ "HELO/EHLO" (Atto8.choice [ciByteString "EHLO", ciByteString "HELO"])
   interactionReply (Okay " OK")
-  from <- receive "MAIL FROM" (ciByteString "MAIL FROM:")
+  from <- receive "MAIL FROM" (ciByteString "MAIL FROM:" *> reversePath)
   interactionReply (Okay " OK")
-  to <- receive "RCPT TO" (ciByteString "RCPT TO:")
+  to <- receive "RCPT TO" (ciByteString "RCPT TO:" *> reversePath)
   interactionReply (Okay " OK")
   receive_ "DATA" (ciByteString "DATA")
   interactionReply StartMailInput
@@ -191,6 +191,9 @@ interaction Interaction {..} = do
   interactionReply (Okay " OK")
   receive_ "QUIT" (ciByteString "QUIT")
   interactionReply Closing
+
+reversePath :: Atto8.Parser ByteString
+reversePath = Atto8.char '<' *> Atto8.takeWhile (/='>') <* Atto8.char '>'
 
 -- https://tools.ietf.org/html/rfc5321
 -- Although EHLO keywords may be specified in upper, lower, or mixed
