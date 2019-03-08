@@ -14,4 +14,5 @@ data Letter =
     , letterMimeValue :: MIMEValue
     , letterReceived :: UTCTime
     , letterIp :: ByteString
+    , letterHeloDomain :: ByteString
     }

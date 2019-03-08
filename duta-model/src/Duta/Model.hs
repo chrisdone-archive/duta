@@ -43,7 +43,7 @@ insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
   => Letter
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage (Letter from0 to0 original value received ip) = do
+insertModelMessage (Letter from0 to0 original value received ip heloDomain) = do
   subject <- fmap (decodeRFC2047 . T.encodeUtf8) (lookupHeader "subject" value)
   (threadId, mparentId) <- getThreadId subject value
   msgId <-
@@ -53,6 +53,7 @@ insertModelMessage (Letter from0 to0 original value received ip) = do
          , messageFromHeader = lookupHeader "from" value
          , messageToHeader = lookupHeader "to" value
          , messageMailFrom = T.decodeUtf8 from0
+         , messageHeloDomain = T.decodeUtf8 heloDomain
          , messageRcptTo = T.decodeUtf8 to0
          , messageSubject = subject
          , messageThread = threadId

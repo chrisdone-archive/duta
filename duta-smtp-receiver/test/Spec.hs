@@ -167,6 +167,7 @@ writingToDb =
                        Just "Christopher Done <chrisdone@gmail.com>"
                    , Duta.Types.Model.messageToHeader = Just "wibble@chrisdone.com"
                    , Duta.Types.Model.messageMailFrom = "chrisdone@gmail.com"
+                   , Duta.Types.Model.messageHeloDomain = "mail-qk0-f170.google.com"
                    , Duta.Types.Model.messageRcptTo = "wibble@chrisdone.com"
                    , Duta.Types.Model.messageSubject = "Re: wibbling"
                    , Duta.Types.Model.messageParent = Nothing

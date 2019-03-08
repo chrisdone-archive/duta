@@ -45,6 +45,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     thread ThreadId
     parent MessageId Maybe
     identifier Text Maybe
+    heloDomain Text
     mailFrom Text
     rcptTo Text
     fromHeader Text Maybe

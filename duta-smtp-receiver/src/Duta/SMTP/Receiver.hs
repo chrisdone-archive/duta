@@ -169,7 +169,11 @@ interaction ::
   -> C.ConduitT ByteString c m ()
 interaction Interaction {..} = do
   interactionReply (ServiceReady (S8.pack interactionHostname))
-  receive_ "HELO/EHLO" (Atto8.choice [ciByteString "EHLO", ciByteString "HELO"])
+  helo <-
+    receive
+      "HELO/EHLO"
+      (Atto8.choice [ciByteString "EHLO", ciByteString "HELO"] *> Atto8.char ' ' *>
+       domainParser)
   interactionReply (Okay " OK")
   from <- receive "MAIL FROM" (ciByteString "MAIL FROM:" *> reversePath)
   interactionReply (Okay " OK")
@@ -183,6 +187,7 @@ interaction Interaction {..} = do
        (Letter
           { letterPayload = data'
           , letterMimeValue = parseMIMEMessage (T.pack (S8.unpack data'))
+          , letterHeloDomain = helo
           , letterFrom = from
           , letterTo = to
           , letterReceived = interactionTime
@@ -192,8 +197,11 @@ interaction Interaction {..} = do
   receive_ "QUIT" (ciByteString "QUIT")
   interactionReply Closing
 
+domainParser :: Atto8.Parser ByteString
+domainParser = Atto8.takeWhile (\c -> isAlphaNum c || c == '.' || c == '-')
+
 reversePath :: Atto8.Parser ByteString
-reversePath = Atto8.char '<' *> Atto8.takeWhile (/='>') <* Atto8.char '>'
+reversePath = Atto8.char '<' *> Atto8.takeWhile (/= '>') <* Atto8.char '>'
 
 -- https://tools.ietf.org/html/rfc5321
 -- Although EHLO keywords may be specified in upper, lower, or mixed
