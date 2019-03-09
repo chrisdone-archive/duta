@@ -6,9 +6,15 @@ main = do
   result <-
     Spf.makeSpfRequest
       serv
-      (Spf.SpfRequest
-         { Spf.spfRequestIpV4 = "130.211.0.0"
-         , Spf.spfRequestHeloDomain = "mail.gmail.com"
-         , Spf.spfRequestFromAddress = "gmail.com"
-         })
+      $  Spf.SpfRequest "142.11.238.122" "hwc-hwp-4465340" "rbenson825@chrisdone.com"
+
   print result
+
+-- Real examples
+--
+-- chrisdone@fpcomplete.com                     | 209.85.166.179 | mail-it1-f179.google.com
+
+-- duta=> select mail_from, ip, helo_domain from message where mail_from like '%bazon%' order by received desc limit 3;
+--     mail_from    |       ip       | helo_domain
+-- -----------------+----------------+--------------
+--  mihai@bazon.net | 144.76.241.201 | somemore.net
