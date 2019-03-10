@@ -14,6 +14,7 @@ import           Duta.Model
 import           Duta.SMTP.Receiver
 import qualified Duta.Types.Model
 import           Options.Applicative.Simple
+import qualified Spf
 
 main :: IO ()
 main = do
@@ -46,6 +47,7 @@ main = do
             (do withResource
                   pool
                   (runReaderT (runMigration Duta.Types.Model.migrateAll))
+                spfServer <- Spf.newServer Spf.SPF_DNS_CACHE Spf.ModerateLevel
                 runStdoutLoggingT
                   (start
                      Start
@@ -58,7 +60,8 @@ main = do
                                (\_src _level -> False)
                                (withResource
                                   pool
-                                  (runReaderT (insertModelMessage letter)))
+                                  (runReaderT
+                                     (insertModelMessage spfServer letter)))
                              logDebug "Done database insert."
                        , startPool = pool
                        }))))

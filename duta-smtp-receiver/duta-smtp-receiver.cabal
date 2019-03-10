@@ -58,6 +58,7 @@ executable duta-smtp-receiver
                      , duta-model
                      , resource-pool
                      , mtl
+                     , spf
   default-language:    Haskell2010
 
 test-suite duta-smtp-receiver-test
@@ -90,6 +91,7 @@ test-suite duta-smtp-receiver-test
                      , duta-model,
                        email-header
                      , attoparsec
+                     , spf
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

@@ -31,6 +31,7 @@ import           Duta.Types.Label
 import           Duta.Types.Letter
 import           Duta.Types.Model
 import           Duta.Types.Order
+import qualified Spf
 import           Text.HTML.DOM
 import           Text.XML
 
@@ -41,9 +42,10 @@ instance Exception ModelError
 -- | Insert a message, mapping it to any existing thread.
 insertModelMessage ::
      (MonadIO m, MonadLogger m, MonadThrow m)
-  => Letter
+  => Spf.Server
+  -> Letter
   -> ReaderT Persistent.SqlBackend m ()
-insertModelMessage (Letter from0 to0 original value received ip heloDomain) = do
+insertModelMessage spfServer letter@(Letter from0 to0 original value received ip heloDomain) = do
   subject <- fmap (decodeRFC2047 . T.encodeUtf8) (lookupHeader "subject" value)
   (threadId, mparentId) <- getThreadId subject value
   msgId <-
@@ -74,9 +76,50 @@ insertModelMessage (Letter from0 to0 original value received ip heloDomain) = do
                   (threadTag E.^. ThreadTagTag E.==. tag E.^. TagId))
                pure tag)))
   labelThread Unread threadId
-  unless (elem Muted labels) (labelThread Inbox threadId)
+  unless
+    (elem Muted labels)
+    (case mparentId of
+       Just {} -> labelThread Inbox threadId
+       Nothing -> applySpfRule spfServer threadId letter)
   _ <- Persistent.insert (OriginalMessage msgId original)
   evalStateT (insertContent msgId Nothing value) (Order 0)
+
+-- | Run SPF on the message. If it's a pass/neutral/none then let the
+-- mail through. If the ip/helo/from are invalid, mark spam. If the
+-- SPF returns FAIL or SOFTFAIL, mark spam.
+applySpfRule ::
+     MonadIO m
+  => Spf.Server
+  -> ThreadId
+  -> Letter
+  -> ReaderT Persistent.SqlBackend m ()
+applySpfRule spfServer tid letter = do
+  result <-
+    liftIO
+      (Spf.makeRequest
+         spfServer
+         (Spf.Request
+            { Spf.requestIpV4 = letterIp letter
+            , Spf.requestHeloDomain = letterHeloDomain letter
+            , Spf.requestFromAddress = letterFrom letter
+            }))
+  case result of
+    Spf.SPF_REQUEST_RESULT_PASS -> pure ()
+    Spf.SPF_REQUEST_RESULT_NEUTRAL -> pure ()
+    Spf.SPF_REQUEST_RESULT_NONE -> pure ()
+    -- Valid request, fails:
+    Spf.SPF_REQUEST_RESULT_FAIL -> markSpam
+    Spf.SPF_REQUEST_RESULT_SOFTFAIL -> markSpam
+   -- Invalid request:
+    Spf.SPF_REQUEST_INVALID_IP -> markSpam
+    Spf.SPF_REQUEST_INVALID_HELO_DOMAIN -> markSpam
+    Spf.SPF_REQUEST_INVALID_ENVELOPE_FROM -> markSpam
+   -- Otherwise, let it through to the inbox:
+    _ -> pure ()
+  where
+    markSpam = do
+      labelThread Spam tid
+      labelThread Deleted tid
 
 -- | Figure out the thread that a message belongs to.
 getThreadId ::

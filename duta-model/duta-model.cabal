@@ -39,5 +39,6 @@ library
     html-conduit,
     syb,
     containers,
-    email-header
+    email-header,
+    spf
   default-language:    Haskell2010

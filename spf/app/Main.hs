@@ -2,11 +2,11 @@
 import qualified Spf
 main :: IO ()
 main = do
-  serv <- Spf.newSpfServer Spf.SPF_DNS_CACHE Spf.ModerateLevel
+  serv <- Spf.newServer Spf.SPF_DNS_CACHE Spf.ModerateLevel
   result <-
-    Spf.makeSpfRequest
+    Spf.makeRequest
       serv
-      $  Spf.SpfRequest "142.11.238.122" "hwc-hwp-4465340" "rbenson825@chrisdone.com"
+      $  Spf.Request "14.181.86.25" "yimbux.com" "Corentin.Romero@yimbux.com"
 
   print result
 

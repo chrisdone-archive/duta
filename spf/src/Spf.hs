@@ -4,13 +4,14 @@
 -- | SPF binding.
 
 module Spf
-  ( newSpfServer
+  ( newServer
   , DnsType(..)
   , DebugLevel(..)
-  , SpfServer
-  , makeSpfRequest
-  , SpfRequest(..)
+  , Server
+  , makeRequest
+  , Request(..)
   , SpfException(..)
+  , RequestResult(..)
   ) where
 
 import           Control.Exception
@@ -46,29 +47,29 @@ data RequestResult
   | SPF_REQUEST_RESULT_PERMERROR
   deriving (Enum, Eq, Ord, Show)
 
-data SpfRequest =
-  SpfRequest
-    { spfRequestIpV4 :: !ByteString
-    , spfRequestHeloDomain :: !ByteString
-    , spfRequestFromAddress :: !ByteString
+data Request =
+  Request
+    { requestIpV4 :: !ByteString
+    , requestHeloDomain :: !ByteString
+    , requestFromAddress :: !ByteString
     }
 
 -- | Make an SPF request and return a simple enum type.
-makeSpfRequest :: SpfServer -> SpfRequest -> IO RequestResult
-makeSpfRequest (SpfServer fptr) req =
+makeRequest :: Server -> Request -> IO RequestResult
+makeRequest (Server fptr) req =
   fmap
     toEnum
     (withForeignPtr
        fptr
        (\ptr ->
           S.useAsCString
-            (spfRequestIpV4 req)
+            (requestIpV4 req)
             (\ipv4 ->
                S.useAsCString
-                 (spfRequestFromAddress req)
+                 (requestFromAddress req)
                  (\sender ->
                     S.useAsCString
-                      (spfRequestHeloDomain req)
+                      (requestHeloDomain req)
                       (\helo -> spf_make_request ptr ipv4 helo sender)))))
 
 foreign import ccall "spf2 spf_make_request" spf_make_request
@@ -79,11 +80,11 @@ foreign import ccall "spf2 spf_make_request" spf_make_request
   -> IO Int
 
 --------------------------------------------------------------------------------
--- SpfServer
+-- Server
 
 -- | An SPF server.
-newtype SpfServer =
-  SpfServer (ForeignPtr SPF_server_t)
+newtype Server =
+  Server (ForeignPtr SPF_server_t)
   deriving (Eq)
 
 data DebugLevel
@@ -106,8 +107,8 @@ data DnsType
   deriving (Enum, Eq, Ord, Bounded, Show)
 
 -- | Make a new SPF server.
-newSpfServer :: DnsType -> DebugLevel -> IO SpfServer
-newSpfServer ty debugLevel =
+newServer :: DnsType -> DebugLevel -> IO Server
+newServer ty debugLevel =
   fmap
     coerce
     (uninterruptibleMask_

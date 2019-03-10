@@ -31,7 +31,7 @@ import           Duta.Model
 import           Duta.RFC2047
 import qualified Duta.SMTP.Receiver
 import qualified Duta.Types.Model
-
+import qualified Spf
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -183,6 +183,7 @@ writingToDb =
                   (mkSqliteConnectionInfo ":memory:")
                   (runReaderT
                      (do _ <- runMigrationSilent Duta.Types.Model.migrateAll
+                         spfServer <- liftIO (Spf.newServer Spf.SPF_DNS_CACHE Spf.ModerateLevel)
                          replies <-
                            C.runConduit
                              (CL.sourceList gmailInput .|
@@ -192,7 +193,7 @@ writingToDb =
                                   , Duta.SMTP.Receiver.interactionIp =
                                       "127.0.0.1"
                                   , Duta.SMTP.Receiver.interactionOnMessage =
-                                      insertModelMessage
+                                      insertModelMessage spfServer
                                   , Duta.SMTP.Receiver.interactionReply =
                                       C.yield
                                   , Duta.SMTP.Receiver.interactionTime = now
