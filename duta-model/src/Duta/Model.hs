@@ -104,9 +104,9 @@ applySpfRule spfServer tid letter = do
             , Spf.requestFromAddress = letterFrom letter
             }))
   case result of
-    Spf.SPF_REQUEST_RESULT_PASS -> pure ()
-    Spf.SPF_REQUEST_RESULT_NEUTRAL -> pure ()
-    Spf.SPF_REQUEST_RESULT_NONE -> pure ()
+    Spf.SPF_REQUEST_RESULT_PASS -> markInbox
+    Spf.SPF_REQUEST_RESULT_NEUTRAL -> markInbox
+    Spf.SPF_REQUEST_RESULT_NONE -> markInbox
     -- Valid request, fails:
     Spf.SPF_REQUEST_RESULT_FAIL -> markSpam
     Spf.SPF_REQUEST_RESULT_SOFTFAIL -> markSpam
@@ -115,8 +115,9 @@ applySpfRule spfServer tid letter = do
     Spf.SPF_REQUEST_INVALID_HELO_DOMAIN -> markSpam
     Spf.SPF_REQUEST_INVALID_ENVELOPE_FROM -> markSpam
    -- Otherwise, let it through to the inbox:
-    _ -> pure ()
+    _ -> markInbox
   where
+    markInbox = labelThread Inbox tid
     markSpam = do
       labelThread Spam tid
       labelThread Deleted tid
