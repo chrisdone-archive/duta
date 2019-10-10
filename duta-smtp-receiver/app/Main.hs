@@ -47,7 +47,7 @@ main = do
             (do withResource
                   pool
                   (runReaderT (runMigration Duta.Types.Model.migrateAll))
-                spfServer <- Spf.newServer Spf.SPF_DNS_CACHE Spf.ModerateLevel
+                spfServer <- Spf.newServer Spf.SPF_DNS_CACHE Spf.SilentLevel
                 runStdoutLoggingT
                   (start
                      Start
