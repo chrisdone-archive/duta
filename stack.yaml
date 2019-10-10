@@ -6,19 +6,12 @@ packages:
 - duta-web
 - duta-types
 - duta-model
-- location:
-    git: https://github.com/chrisdone/yesod-lucid
-    commit: de8b455a6efcc02b95d5f6363a29044e230dc75f
-  extra-dep: true
-- location:
-    git: https://github.com/chrisdone/mime
-    commit: a27a1bcded423b3096d0e9432d9f9acb7f718b0a
-  extra-dep: true
-# - ../mime
-- location:
-    git: https://github.com/bitemyapp/esqueleto.git
-    commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
-  extra-dep: true
 
 extra-deps:
+- github: chrisdone/yesod-lucid
+  commit: de8b455a6efcc02b95d5f6363a29044e230dc75f
+- github: chrisdone/mime
+  commit: a27a1bcded423b3096d0e9432d9f9acb7f718b0a
+- github: bitemyapp/esqueleto
+  commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
 - email-header-0.4.1@sha256:3d501fb7cb4cc0af743105d65076fe1637687ba7e8477d84c28b9235d82be414
