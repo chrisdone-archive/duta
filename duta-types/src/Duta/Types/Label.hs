@@ -4,6 +4,7 @@
 
 module Duta.Types.Label where
 
+import           Data.Aeson
 import           Data.Char
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -35,6 +36,9 @@ instance PathPiece Label where
 
 instance Read Label where
   readsPrec _ = \s -> [(l, "") | Right l <- [parseSlug (T.pack s)]]
+
+instance ToJSON Label where
+  toJSON = toJSON . labelSlug
 
 parseSlug :: Text -> Either Text Label
 parseSlug t =

@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 
@@ -12,6 +15,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Logger.CallStack
 import           Control.Monad.Reader
 import           Control.Monad.State
+import           Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import           Data.Generics
 import           Data.Int
@@ -309,11 +313,32 @@ data Query = Query
   , queryLimit :: Int64
   }
 
+data TaggedThread =
+  TaggedThread
+    { thread :: Entity Thread
+    , tags :: [Entity Tag]
+    }
+
+instance ToJSON TaggedThread where
+  toJSON (TaggedThread {thread = Entity tid Thread {..}, tags}) =
+    object
+      [ "id" .= tid
+      , "subject" .= threadSubject
+      , "created" .= threadCreated
+      , "updated" .= threadUpdated
+      , "messages" .= threadMessages
+      , "tags" .=
+        map
+          (\(Entity tagid Tag {..}) ->
+             object ["id" .= tagid, "label" .= tagLabel, "title" .= tagTitle])
+          tags
+      ]
+
 -- | Return all threads given by a query.
 getThreadsByQuery ::
      MonadIO m
   => Query
-  -> ReaderT Persistent.SqlBackend m [(Entity Thread, [Entity Tag])]
+  -> ReaderT Persistent.SqlBackend m [TaggedThread]
 getThreadsByQuery query = do
   threads <-
     E.select
@@ -357,12 +382,13 @@ getThreadsByQuery query = do
   pure
     (map
        (\thread ->
-          ( thread
-          , mapMaybe
-              (\(Entity _ threadTag, label) -> do
-                 guard (threadTagThread threadTag == entityKey thread)
-                 pure label)
-              threadsLabels))
+          let tags =
+                mapMaybe
+                  (\(Entity _ threadTag, label) -> do
+                     guard (threadTagThread threadTag == entityKey thread)
+                     pure label)
+                  threadsLabels
+           in TaggedThread {thread, tags})
        threads)
 
 getThread ::

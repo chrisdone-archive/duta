@@ -40,5 +40,6 @@ library
     syb,
     containers,
     email-header,
-    spf
+    spf,
+    aeson
   default-language:    Haskell2010

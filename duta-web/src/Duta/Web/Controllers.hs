@@ -14,6 +14,7 @@
 
 module Duta.Web.Controllers where
 
+import           Data.Aeson
 import           Data.Graph
 import           Data.Maybe
 import qualified Database.Esqueleto as E
@@ -28,33 +29,43 @@ import           Yesod hiding (toHtml, Html)
 import           Yesod.Auth
 import           Yesod.Lucid
 
-getInboxR :: Handler LucidHtml
-getInboxR = do
-  mu <- maybeAuthId
-  case mu of
-    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
-    Just {} -> do
-      labelledThreads <-
-        runDB
-          (getThreadsByQuery
-             Query
-               {queryLimit = 1000, queryIncludeLabels = [Inbox], queryExcludeLabels = [Deleted]})
-      lucid
-        (\url ->
-           doctypehtml_
-             (do head_
-                   (do meta_ [charset_ "utf-8"]
-                       link_
-                         [ rel_ "stylesheet"
-                         , type_ "text/css"
-                         , href_ (url (StaticR css_duta_css))
-                         ])
-                 body_
-                   (div_
-                      [class_ "inbox"]
-                      (do topnav_ url
-                          h1_ "Inbox"
-                          listThreads url labelledThreads))))
+getInboxR :: Handler TypedContent
+getInboxR =
+  selectRep
+    (do provideRep
+          (do mu <- maybeAuthId
+              case mu of
+                Nothing ->
+                  lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
+                Just {} -> do
+                  labelledThreads <- runDB getInboxThreads
+                  lucid
+                    (\url ->
+                       doctypehtml_
+                         (do head_
+                               (do meta_ [charset_ "utf-8"]
+                                   link_
+                                     [ rel_ "stylesheet"
+                                     , type_ "text/css"
+                                     , href_ (url (StaticR css_duta_css))
+                                     ])
+                             body_
+                               (div_
+                                  [class_ "inbox"]
+                                  (do topnav_ url
+                                      h1_ "Inbox"
+                                      listThreads url labelledThreads)))))
+        provideRep
+          (do threads <- runDB getInboxThreads
+              pure (toJSON threads)))
+  where
+    getInboxThreads =
+      getThreadsByQuery
+        Query
+          { queryLimit = 1000
+          , queryIncludeLabels = [Inbox]
+          , queryExcludeLabels = [Deleted]
+          }
 
 getAllR :: Handler LucidHtml
 getAllR = do

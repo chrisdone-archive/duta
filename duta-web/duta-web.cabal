@@ -48,6 +48,7 @@ library
                      , syb
                      , esqueleto
                      , duta-types
+                     , aeson
   default-language:    Haskell2010
 
 executable duta-web

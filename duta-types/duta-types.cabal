@@ -28,5 +28,6 @@ library
     email-validate,
     yesod-core,
     attoparsec,
-    mime
+    mime,
+    aeson
   default-language:    Haskell2010

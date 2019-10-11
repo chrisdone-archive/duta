@@ -6,7 +6,6 @@ import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
-import           Data.Monoid
 import           Data.Pool
 import qualified Data.Text as T
 import           Database.Persist.Postgresql as Persistent

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -23,6 +24,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time
 import           Database.Persist
+import           Duta.Model
 import           Duta.Types.Label
 import           Duta.Types.Model
 import           Duta.Web.Foundation
@@ -31,18 +33,19 @@ import           Lucid
 import           Text.Links
 import           Yesod.Auth
 
-listThreads :: (Route App -> Text) -> [(Entity Thread, [Entity Tag])] -> Html ()
+listThreads :: (Route App -> Text) -> [TaggedThread] -> Html ()
 listThreads url labelledThreads = do
-  p_ [class_ "main-actions"]
+  p_
+    [class_ "main-actions"]
     (do a_ [href_ (url InboxR)] "Inbox"
         a_ [href_ (url AllR)] "All"
         a_ [href_ (url DeletedR)] "Deleted"
         a_ [href_ (url SpamR)] "Spam")
   when (null labelledThreads) (p_ "No messages!")
   mapM_
-    (\(Entity threadId thread, labels) -> do
+    (\TaggedThread {thread = Entity threadId thread, tags} -> do
        let unreadClass =
-             if elem Unread (map (tagLabel . entityVal) labels)
+             if elem Unread (map (tagLabel . entityVal) tags)
                then "thread-preview-unread"
                else ""
        div_
@@ -57,9 +60,10 @@ listThreads url labelledThreads = do
                [ class_ ("thread-preview-link " <> unreadClass)
                , href_ (url (ThreadR threadId))
                ]
-               (toHtml (if T.null (threadSubject thread)
-                           then "No subject"
-                           else threadSubject thread))))
+               (toHtml
+                  (if T.null (threadSubject thread)
+                     then "No subject"
+                     else threadSubject thread))))
     labelledThreads
 
 viewThread ::
