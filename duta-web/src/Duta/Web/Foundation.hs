@@ -13,17 +13,18 @@
 
 module Duta.Web.Foundation where
 
-import Data.Text (Text)
-import Database.Persist.Postgresql as Persistent
-import Development
-import Duta.Types.Label
-import Duta.Types.Model
-import Duta.Web.Types
-import Yesod hiding (toHtml, Html)
-import Yesod.Auth
-import Yesod.Auth.Hardcoded
-import Yesod.Auth.Message (AuthMessage(InvalidLogin))
-import Yesod.EmbeddedStatic
+import           Data.Text (Text)
+import qualified Data.Text.Encoding as T
+import           Database.Persist.Postgresql as Persistent
+import           Development
+import           Duta.Types.Label
+import           Duta.Types.Model
+import           Duta.Web.Types
+import           Yesod hiding (toHtml, Html)
+import           Yesod.Auth
+import           Yesod.Auth.Hardcoded
+import           Yesod.Auth.Message (AuthMessage(InvalidLogin))
+import           Yesod.EmbeddedStatic
 
 mkYesodData "App" [parseRoutes|
   /static StaticR EmbeddedStatic appStatic
@@ -47,8 +48,25 @@ instance Yesod App where
   authRoute _ = Just $ AuthR LoginR
   isAuthorized (AuthR _) _ = return Authorized
   isAuthorized _ _ = do
-    mu <- maybeAuthId
-    return (maybe AuthenticationRequired (const Authorized) mu)
+    authorizedViaHeaders <- authFromHeaders
+    case authorizedViaHeaders of
+      Just result -> pure result
+      Nothing -> do
+        mu <- maybeAuthId
+        return (maybe AuthenticationRequired (const Authorized) mu)
+
+authFromHeaders :: Handler (Maybe AuthResult)
+authFromHeaders = do
+  u0 <- lookupHeader "user"
+  p0 <- lookupHeader "pass"
+  case (,) <$> u0 <*> p0 of
+    Just (u, p) -> do
+      siteManager <- fmap appSiteManager getYesod
+      pure
+        (if SiteManager (T.decodeUtf8 u) (T.decodeUtf8 p) == siteManager
+           then Just Authorized
+           else Just (Unauthorized "Bad user/pass combo."))
+    Nothing -> pure Nothing
 
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
