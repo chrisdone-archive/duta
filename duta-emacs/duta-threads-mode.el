@@ -65,6 +65,9 @@
 (defun duta-threads-refresh ()
   (interactive)
   (let ((inhibit-read-only t))
+    (erase-buffer)
+    (insert "Refreshing ...")
+    (redisplay)
     (let ((threads (duta-get duta-threads-mode-path)))
       (save-excursion
         (erase-buffer)
