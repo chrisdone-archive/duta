@@ -17,148 +17,88 @@ module Duta.Web.Controllers where
 import           Data.Aeson
 import           Data.Graph
 import           Data.Maybe
+import           Data.Text (Text)
 import qualified Database.Esqueleto as E
 import           Database.Persist.Postgresql as Persistent
 import           Duta.Model
 import           Duta.Types.Label
 import           Duta.Types.Model
 import           Duta.Web.Foundation
+import           Duta.Web.Types
 import           Duta.Web.Views
 import           Lucid
 import           Yesod hiding (toHtml, Html)
-import           Yesod.Auth
 import           Yesod.Lucid
 
 getInboxR :: Handler TypedContent
 getInboxR =
+  getThreads
+    "inbox"
+    "Inbox"
+    (getThreadsByQuery
+       Query
+         { queryLimit = 1000
+         , queryIncludeLabels = [Inbox]
+         , queryExcludeLabels = [Deleted]
+         })
+
+getAllR :: Handler TypedContent
+getAllR =
+  getThreads
+    "all"
+    "All"
+    (getThreadsByQuery
+       Query
+         { queryIncludeLabels = []
+         , queryExcludeLabels = [Deleted]
+         , queryLimit = 30
+         })
+
+getDeletedR :: Handler TypedContent
+getDeletedR =
+  getThreads
+    "deleted"
+    "Deleted"
+    (getThreadsByQuery
+       Query
+         { queryIncludeLabels = [Deleted]
+         , queryExcludeLabels = [Spam]
+         , queryLimit = 30
+         })
+
+getSpamR :: Handler TypedContent
+getSpamR =
+  getThreads
+    "spam"
+    "Spam"
+    (getThreadsByQuery
+       Query
+         {queryIncludeLabels = [Spam], queryExcludeLabels = [], queryLimit = 30})
+
+getThreads :: Text -> Text -> (YesodDB App [TaggedThread]) -> Handler TypedContent
+getThreads cls title getter =
   selectRep
     (do provideRep
-          (do mu <- maybeAuthId
-              case mu of
-                Nothing ->
-                  lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
-                Just {} -> do
-                  labelledThreads <- runDB getInboxThreads
-                  lucid
-                    (\url ->
-                       doctypehtml_
-                         (do head_
-                               (do meta_ [charset_ "utf-8"]
-                                   link_
-                                     [ rel_ "stylesheet"
-                                     , type_ "text/css"
-                                     , href_ (url (StaticR css_duta_css))
-                                     ])
-                             body_
-                               (div_
-                                  [class_ "inbox"]
-                                  (do topnav_ url
-                                      h1_ "Inbox"
-                                      listThreads url labelledThreads)))))
+          (do labelledThreads <- runDB getter
+              lucid
+                (\url ->
+                   doctypehtml_
+                     (do head_
+                           (do meta_ [charset_ "utf-8"]
+                               link_
+                                 [ rel_ "stylesheet"
+                                 , type_ "text/css"
+                                 , href_ (url (StaticR css_duta_css))
+                                 ])
+                         body_
+                           (div_
+                              [class_ cls]
+                              (do topnav_ url
+                                  h1_ (toHtml title)
+                                  listThreads url labelledThreads)))))
         provideRep
-          (do threads <- runDB getInboxThreads
+          (do threads <- runDB getter
               pure (toJSON threads)))
-  where
-    getInboxThreads =
-      getThreadsByQuery
-        Query
-          { queryLimit = 1000
-          , queryIncludeLabels = [Inbox]
-          , queryExcludeLabels = [Deleted]
-          }
-
-getAllR :: Handler LucidHtml
-getAllR = do
-  mu <- maybeAuthId
-  case mu of
-    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
-    Just {} -> do
-      labelledThreads <-
-        runDB
-          (getThreadsByQuery
-             Query
-               { queryIncludeLabels = []
-               , queryExcludeLabels = [Deleted]
-               , queryLimit = 30
-               })
-      lucid
-        (\url ->
-           doctypehtml_
-             (do head_
-                   (do meta_ [charset_ "utf-8"]
-                       link_
-                         [ rel_ "stylesheet"
-                         , type_ "text/css"
-                         , href_ (url (StaticR css_duta_css))
-                         ])
-                 body_
-                   (div_
-                      [class_ "all"]
-                      (do topnav_ url
-                          h1_ "All"
-                          listThreads url labelledThreads))))
-
-getDeletedR :: Handler LucidHtml
-getDeletedR = do
-  mu <- maybeAuthId
-  case mu of
-    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
-    Just {} -> do
-      labelledThreads <-
-        runDB
-          (getThreadsByQuery
-             Query
-               { queryIncludeLabels = [Deleted]
-               , queryExcludeLabels = [Spam]
-               , queryLimit = 30
-               })
-      lucid
-        (\url ->
-           doctypehtml_
-             (do head_
-                   (do meta_ [charset_ "utf-8"]
-                       link_
-                         [ rel_ "stylesheet"
-                         , type_ "text/css"
-                         , href_ (url (StaticR css_duta_css))
-                         ])
-                 body_
-                   (div_
-                      [class_ "deleted"]
-                      (do topnav_ url
-                          h1_ "Deleted"
-                          listThreads url labelledThreads))))
-
-getSpamR :: Handler LucidHtml
-getSpamR = do
-  mu <- maybeAuthId
-  case mu of
-    Nothing -> lucid (\url -> p_ (a_ [href_ (url (AuthR LoginR))] "Login"))
-    Just {} -> do
-      labelledThreads <-
-        runDB
-          (getThreadsByQuery
-             Query
-               { queryIncludeLabels = [Spam]
-               , queryExcludeLabels = []
-               , queryLimit = 30
-               })
-      lucid
-        (\url ->
-           doctypehtml_
-             (do head_
-                   (do meta_ [charset_ "utf-8"]
-                       link_
-                         [ rel_ "stylesheet"
-                         , type_ "text/css"
-                         , href_ (url (StaticR css_duta_css))
-                         ])
-                 body_
-                   (div_
-                      [class_ "spam"]
-                      (do topnav_ url
-                          h1_ "Spam"
-                          listThreads url labelledThreads))))
 
 getThreadR :: ThreadId -> Handler LucidHtml
 getThreadR threadId = do
