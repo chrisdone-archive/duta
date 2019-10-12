@@ -35,6 +35,9 @@
       (with-current-buffer buffer
         (goto-char (point-min))
         (search-forward-regexp "\r?\n\r?\n" nil nil 1)
-        (json-read)))))
+        (json-read-from-string
+         (decode-coding-string
+          (buffer-substring-no-properties (point) (point-max))
+          'utf-8))))))
 
 (provide 'duta)
