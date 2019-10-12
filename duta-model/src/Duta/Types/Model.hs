@@ -12,6 +12,7 @@
 
 module Duta.Types.Model where
 
+import Data.Aeson
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Time
@@ -98,9 +99,42 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
     deriving Eq
  |]
 
+instance ToJSON PlainTextPart where
+  toJSON PlainTextPart {..} =
+    object
+      [ "message" .= plainTextPartMessage
+      , "content" .= plainTextPartContent
+      , "ordering" .= plainTextPartOrdering
+      ]
+
 data Attachment = Attachment
   { attachmentBinaryPartId :: BinaryPartId
   , attachmentMessageId :: MessageId
   , attachmentName :: Maybe Text
   , attachmentContentType :: Text
   }
+
+instance ToJSON Attachment where
+  toJSON Attachment {..} =
+    object
+      [ "binary_part_id" .= attachmentBinaryPartId
+      , "message_id" .= attachmentMessageId
+      , "name" .= attachmentName
+      , "content_type" .= attachmentContentType
+      ]
+
+instance ToJSON Message where
+  toJSON Message {..} =
+    object
+      [ "received" .= messageReceived
+      , "thread" .= messageThread
+      , "parent" .= messageParent
+      , "identifier" .= messageIdentifier
+      , "helo_domain" .= messageHeloDomain
+      , "mail_from" .= messageMailFrom
+      , "rcpt_to" .= messageRcptTo
+      , "from_header" .= messageFromHeader
+      , "to_header" .= messageToHeader
+      , "subject" .= messageSubject
+      , "ip" .= messageIp
+      ]

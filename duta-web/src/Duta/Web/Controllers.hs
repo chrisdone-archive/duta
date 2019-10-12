@@ -100,9 +100,10 @@ getThreads cls title getter =
           (do threads <- runDB getter
               pure (toJSON threads)))
 
-getThreadR :: ThreadId -> Handler LucidHtml
+getThreadR :: ThreadId -> Handler TypedContent
 getThreadR threadId = do
-  (mthread, messages, plainParts, attachments, labels) <- runDB (getThread threadId)
+  (mthread, messages, plainParts, attachments, labels) <-
+    runDB (getThread threadId)
   let (g, v2n, k2v) =
         graphFromEdges
           (map
@@ -124,7 +125,32 @@ getThreadR threadId = do
   case mthread of
     Nothing -> notFound
     Just thread ->
-      lucid (viewThread labels (Entity threadId thread) forest plainParts attachments)
+      selectRep
+        (do provideRep
+              (lucid
+                 (viewThread
+                    labels
+                    (Entity threadId thread)
+                    forest
+                    plainParts
+                    attachments))
+            provideRep
+              (pure
+                 (toJSON
+                    (object
+                       [ "id" .= threadId
+                       , "plain_parts" .= plainParts
+                       , "attachments" .= attachments
+                       , "forest" .= renderForest forest
+                       ]))))
+      where renderForest xs = toJSON (map renderTree xs)
+            renderTree (Node (message, key, keys) children) =
+              object
+                [ "message" .= message
+                , "key" .= key
+                , "dependencies" .= keys
+                , "children" .= renderForest children
+                ]
 
 getApplyLabelR :: ThreadId -> Label -> Handler ()
 getApplyLabelR tid label = do
