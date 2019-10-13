@@ -98,7 +98,8 @@
                 (add-text-properties start
                                      (point)
                                      (list 'duta-thread-begin start
-                                           'duta-thread-end (point)))))
+                                           'duta-thread-end (point)
+                                           'duta-thread-id (cdr (assoc 'id thread))))))
             threads)
       (goto-char (point-min))
       (forward-line (1- original-line)))))
@@ -115,12 +116,10 @@
                         'face
                         (if unread
                             'duta-threads-mode-unread-face
-                          'duta-threads-mode-read-face)
-                        'duta-thread-id
-                        (cdr (assoc 'id thread)))
+                          'duta-threads-mode-read-face))
             (cdr (assoc 'messages thread))
             (propertize (cdr (assoc 'updated thread))
-                        'face 'duta-threads-mode-timestamp-face))))
+                        'face 'duta-threads-mode-timestamp-face)))))
 
 (defun duta-threads-thread-id ()
   (get-text-property (point) 'duta-thread-id))
