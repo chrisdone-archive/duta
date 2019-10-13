@@ -28,6 +28,7 @@
 
 (define-key duta-thread-mode-map (kbd "g") 'duta-thread-refresh)
 (define-key duta-thread-mode-map (kbd "d") 'duta-thread-delete)
+(define-key duta-thread-mode-map (kbd "q") 'duta-thread-quit)
 
 (defface duta-thread-mode-subject-face
   '((((class color) (min-colors 88) (background light)))
@@ -75,5 +76,9 @@
   (when (string= (buffer-name (current-buffer))
                  (buffer-name (get-buffer-create "*duta*")))
     (duta-threads-refresh)))
+
+(defun duta-thread-quit ()
+  (interactive)
+  (kill-buffer))
 
 (provide 'duta-thread-mode)

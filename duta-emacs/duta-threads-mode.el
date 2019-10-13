@@ -43,6 +43,7 @@
 (define-key duta-threads-mode-map (kbd "g") 'duta-threads-refresh)
 (define-key duta-threads-mode-map (kbd "RET") 'duta-threads-open)
 (define-key duta-threads-mode-map (kbd "d") 'duta-threads-delete)
+(define-key duta-threads-mode-map (kbd "s") 'duta-threads-spam)
 (define-key duta-threads-mode-map (kbd "n") 'duta-threads-next)
 (define-key duta-threads-mode-map (kbd "p") 'duta-threads-previous)
 
@@ -85,21 +86,22 @@
 
 (defun duta-threads-refresh ()
   (interactive)
-  (let ((inhibit-read-only t))
-    (goto-char (point-min))
-    (insert "Refreshing ...\n\n")
+  (let ((inhibit-read-only t)
+        (original-line (line-number-at-pos)))
+    (insert " [Refreshing] ")
     (redisplay)
     (let ((threads (duta-get duta-threads-mode-path)))
-      (save-excursion
-        (erase-buffer)
-        (mapc (lambda (thread)
-                (let ((start (point)))
-                  (insert (duta-threads-render-thread thread))
-                  (add-text-properties start
-                                       (point)
-                                       (list 'duta-thread-begin start
-                                             'duta-thread-end (point)))))
-              threads)))))
+      (erase-buffer)
+      (mapc (lambda (thread)
+              (let ((start (point)))
+                (insert (duta-threads-render-thread thread))
+                (add-text-properties start
+                                     (point)
+                                     (list 'duta-thread-begin start
+                                           'duta-thread-end (point)))))
+            threads)
+      (goto-char (point-min))
+      (forward-line (1- original-line)))))
 
 (defun duta-threads-render-thread (thread)
   (let* ((tags (mapcar #'identity (cdr (assoc 'tags thread))))
@@ -107,18 +109,18 @@
                   (lambda (tag)
                     (let ((label (cdr (assoc 'label tag))))
                       (string= label "unread")))
-                                   tags)))
+                  tags)))
     (format "%s (%d)\n%s\n\n"
-          (propertize (cdr (assoc 'subject thread))
-                      'face
-                      (if unread
-                          'duta-threads-mode-unread-face
-                        'duta-threads-mode-read-face)
-                      'duta-thread-id
-                      (cdr (assoc 'id thread)))
-          (cdr (assoc 'messages thread))
-          (propertize (cdr (assoc 'updated thread))
-                      'face 'duta-threads-mode-timestamp-face))))
+            (propertize (cdr (assoc 'subject thread))
+                        'face
+                        (if unread
+                            'duta-threads-mode-unread-face
+                          'duta-threads-mode-read-face)
+                        'duta-thread-id
+                        (cdr (assoc 'id thread)))
+            (cdr (assoc 'messages thread))
+            (propertize (cdr (assoc 'updated thread))
+                        'face 'duta-threads-mode-timestamp-face))))
 
 (defun duta-threads-thread-id ()
   (get-text-property (point) 'duta-thread-id))
@@ -142,6 +144,16 @@
 (defun duta-threads-delete ()
   (interactive)
   (duta-get-async (format "apply-label/%d/deleted" (duta-threads-thread-id)))
+  (let ((inhibit-read-only t))
+    (add-text-properties
+     (duta-threads-begin)
+     (duta-threads-end)
+     (list 'face
+           'duta-threads-mode-deleted-face))))
+
+(defun duta-threads-spam ()
+  (interactive)
+  (duta-get-async (format "apply-label/%d/spam" (duta-threads-thread-id)))
   (let ((inhibit-read-only t))
     (add-text-properties
      (duta-threads-begin)
