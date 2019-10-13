@@ -17,6 +17,8 @@
 
 ;;; Code:
 
+(require 'hl-line)
+
 (defvar-local duta-threads-mode-path "/"
   "Path to pull threads from.")
 
@@ -32,7 +34,8 @@
   "Major mode for listing threads.
  \\{duta-threads-mode-map}"
   (setq buffer-read-only t)
-  (duta-threads-refresh))
+  (duta-threads-refresh)
+  (hl-line-mode 1))
 
 (defface duta-threads-mode-unread-face
   '((((class color) (min-colors 88) (background light))
