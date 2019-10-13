@@ -37,12 +37,29 @@
   (duta-threads-refresh)
   (hl-line-mode 1))
 
+(define-key duta-threads-mode-map (kbd "g") 'duta-threads-refresh)
+(define-key duta-threads-mode-map (kbd "RET") 'duta-threads-open)
+(define-key duta-threads-mode-map (kbd "d") 'duta-threads-delete)
+(define-key duta-threads-mode-map (kbd "n") 'duta-threads-next)
+(define-key duta-threads-mode-map (kbd "p") 'duta-threads-previous)
+
 (defface duta-threads-mode-unread-face
   '((((class color) (min-colors 88) (background light))
      :weight bold)
     (((class color) (min-colors 88) (background dark))
      :weight bold
      :foreground "#8cd0d3")
+    (t :inverse-video t))
+  "Basic face for highlighting."
+  :group 'duta)
+
+(defface duta-threads-mode-deleted-face
+  '((((class color) (min-colors 88) (background light))
+     :weight normal
+     :foreground "#cccccc")
+    (((class color) (min-colors 88) (background dark))
+     :weight normal
+     :foreground "#999999")
     (t :inverse-video t))
   "Basic face for highlighting."
   :group 'duta)
@@ -63,18 +80,22 @@
   "Basic face for highlighting."
   :group 'duta)
 
-(define-key duta-threads-mode-map (kbd "g") 'duta-threads-refresh)
-
 (defun duta-threads-refresh ()
   (interactive)
   (let ((inhibit-read-only t))
-    (erase-buffer)
-    (insert "Refreshing ...")
+    (goto-char (point-min))
+    (insert "Refreshing ...\n\n")
     (redisplay)
     (let ((threads (duta-get duta-threads-mode-path)))
       (save-excursion
         (erase-buffer)
-        (mapc (lambda (thread) (insert (duta-threads-render-thread thread)))
+        (mapc (lambda (thread)
+                (let ((start (point)))
+                  (insert (duta-threads-render-thread thread))
+                  (add-text-properties start
+                                       (point)
+                                       (list 'duta-thread-begin start
+                                             'duta-thread-end (point)))))
               threads)))))
 
 (defun duta-threads-render-thread (thread)
@@ -89,9 +110,52 @@
                       'face
                       (if unread
                           'duta-threads-mode-unread-face
-                        'duta-threads-mode-read-face))
+                        'duta-threads-mode-read-face)
+                      'duta-thread-id
+                      (cdr (assoc 'id thread)))
           (cdr (assoc 'messages thread))
           (propertize (cdr (assoc 'updated thread))
                       'face 'duta-threads-mode-timestamp-face))))
+
+(defun duta-threads-thread-id ()
+  (get-text-property (point) 'duta-thread-id))
+
+(defun duta-threads-begin ()
+  (get-text-property (point) 'duta-thread-begin))
+
+(defun duta-threads-end ()
+  (get-text-property (point) 'duta-thread-end))
+
+(defun duta-threads-open ()
+  (interactive)
+  (switch-to-buffer
+   (let ((thread-id (duta-threads-thread-id)))
+     (with-current-buffer (get-buffer-create (duta-thread-buffer-name thread-id))
+       (duta-thread-mode)
+       (setq duta-thread-mode-id thread-id)
+       (duta-thread-refresh)
+       (current-buffer)))))
+
+(defun duta-threads-delete ()
+  (interactive)
+  (duta-get-async (format "apply-label/%d/deleted" (duta-threads-thread-id)))
+  (let ((inhibit-read-only t))
+    (add-text-properties
+     (duta-threads-begin)
+     (duta-threads-end)
+     (list 'face
+           'duta-threads-mode-deleted-face))))
+
+(defun duta-threads-next ()
+  (interactive)
+  (when (duta-threads-end)
+    (goto-char (duta-threads-end))))
+
+(defun duta-threads-previous ()
+  (interactive)
+  (when (duta-threads-begin)
+    (goto-char (1- (duta-threads-begin)))
+    (when (duta-threads-begin)
+      (goto-char (duta-threads-begin)))))
 
 (provide 'duta-threads-mode)

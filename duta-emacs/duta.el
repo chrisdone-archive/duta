@@ -40,4 +40,20 @@
           (buffer-substring-no-properties (point) (point-max))
           'utf-8))))))
 
+(defun duta-get-async (path)
+  "Make a GET request to PATH."
+  (unless duta-server-url (error "Need duta-server-url"))
+  (unless duta-username (error "Need duta-username"))
+  (unless duta-password (error "Need duta-password"))
+  (let ((url-request-method "GET")
+        (url-request-extra-headers
+         `(("Content-Type" . "Content-Type: application/json")
+           ("user" . ,duta-username)
+           ("pass" . ,duta-password))))
+    (url-retrieve
+     (concat duta-server-url path)
+     'ignore
+     nil
+     t)))
+
 (provide 'duta)
