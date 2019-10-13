@@ -160,6 +160,7 @@ getThreadR threadId = do
             renderTree (Node (message, key, keys) children) =
               object
                 [ "message" .= message
+                , "id" .= key
                 , "key" .= key
                 , "dependencies" .= keys
                 , "children" .= renderForest children

@@ -55,16 +55,41 @@
     (let ((thread (duta-get (format "thread/%d" duta-thread-mode-id))))
       (save-excursion
         (erase-buffer)
-        (insert (duta-thread-render-thread thread))
-        (insert "\n\n" (format "%S" thread))))))
+        (insert (duta-thread-render-thread thread))))))
 
 (defun duta-thread-render-thread (thread)
   (concat
+   (duta-thread-render-header thread)
+   "\n\n"
+   (duta-thread-render-forest (cdr (assoc 'forest thread)))))
+
+(defun duta-thread-render-header (thread)
+  (concat
    (propertize (cdr (assoc 'subject thread)) 'face 'duta-thread-mode-subject-face)
+   " "
+   (format "(%d)" (cdr (assoc 'messages thread)))
    "\n"
    "Created: " (propertize (cdr (assoc 'created thread)) 'face 'duta-thread-mode-timestamp-face)
    "\n"
    "Updated: " (propertize (cdr (assoc 'updated thread)) 'face 'duta-thread-mode-timestamp-face)))
+
+(defun duta-thread-render-forest (forest)
+  (mapconcat
+   (lambda (tree)
+     (let* ((message (cdr (assoc 'message tree)))
+            (id (cdr (assoc 'id tree)))
+            (received (cdr (assoc 'received message)))
+            (from_header (or (cdr (assoc 'from_header message))
+                             (cdr (assoc 'mail_from_header message))))
+            (to_header (or (cdr (assoc 'to_header message))
+                           (cdr (assoc 'rcpt_to message)))))
+       (concat
+        from_header "\n"
+        "Received: " (propertize received 'face 'duta-thread-mode-timestamp-face)
+
+        )))
+   forest
+   "\n\n"))
 
 (defun duta-thread-buffer-name (thread-id)
   (format "*duta:thread-%d*" thread-id))
