@@ -142,6 +142,19 @@ getThreadR threadId = do
                        , "plain_parts" .= plainParts
                        , "attachments" .= attachments
                        , "forest" .= renderForest forest
+                       , "subject" .= threadSubject thread
+                       , "created" .= threadCreated thread
+                       , "updated" .= threadUpdated thread
+                       , "messages" .= threadMessages thread
+                       , "tags" .=
+                         map
+                           (\(_, Entity tagid Tag {..}) ->
+                              object
+                                [ "id" .= tagid
+                                , "label" .= tagLabel
+                                , "title" .= tagTitle
+                                ])
+                           labels
                        ]))))
       where renderForest xs = toJSON (map renderTree xs)
             renderTree (Node (message, key, keys) children) =
