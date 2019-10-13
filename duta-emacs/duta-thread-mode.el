@@ -26,6 +26,25 @@
   (setq buffer-read-only t)
   (hl-line-mode 1))
 
+(define-key duta-thread-mode-map (kbd "g") 'duta-thread-refresh)
+(define-key duta-thread-mode-map (kbd "d") 'duta-thread-delete)
+
+(defface duta-thread-mode-subject-face
+  '((((class color) (min-colors 88) (background light)))
+    (((class color) (min-colors 88) (background dark))
+     :foreground "#8cd0d3")
+    (t :inverse-video t))
+  "Basic face for highlighting."
+  :group 'duta)
+
+(defface duta-thread-mode-timestamp-face
+  '((((class color) (min-colors 88) (background light)))
+    (((class color) (min-colors 88) (background dark))
+     :foreground "#88b090")
+    (t :inverse-video t))
+  "Basic face for highlighting."
+  :group 'duta)
+
 (defun duta-thread-refresh ()
   (interactive)
   (let ((inhibit-read-only t))
@@ -35,9 +54,26 @@
     (let ((thread (duta-get (format "thread/%d" duta-thread-mode-id))))
       (save-excursion
         (erase-buffer)
-        (insert (format "%S" thread))))))
+        (insert (duta-thread-render-thread thread))
+        (insert "\n\n" (format "%S" thread))))))
+
+(defun duta-thread-render-thread (thread)
+  (concat
+   (propertize (cdr (assoc 'subject thread)) 'face 'duta-thread-mode-subject-face)
+   "\n"
+   "Created: " (propertize (cdr (assoc 'created thread)) 'face 'duta-thread-mode-timestamp-face)
+   "\n"
+   "Updated: " (propertize (cdr (assoc 'updated thread)) 'face 'duta-thread-mode-timestamp-face)))
 
 (defun duta-thread-buffer-name (thread-id)
   (format "*duta:thread-%d*" thread-id))
+
+(defun duta-thread-delete ()
+  (interactive)
+  (duta-get-async (format "apply-label/%d/deleted" duta-thread-mode-id))
+  (kill-buffer)
+  (when (string= (buffer-name (current-buffer))
+                 (buffer-name (get-buffer-create "*duta*")))
+    (duta-threads-refresh)))
 
 (provide 'duta-thread-mode)

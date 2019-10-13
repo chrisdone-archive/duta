@@ -25,9 +25,12 @@
 (defun duta ()
   "Start duta in buffer *duta*, listing threads in the inbox."
   (interactive)
-  (with-current-buffer (get-buffer-create "*duta*")
+  (with-current-buffer (duta-threads-buffer)
     (duta-threads-mode)
     (switch-to-buffer (current-buffer))))
+
+(defun duta-threads-buffer ()
+  (get-buffer-create "*duta*"))
 
 (define-derived-mode duta-threads-mode
   fundamental-mode "Duta"
