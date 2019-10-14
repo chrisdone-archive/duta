@@ -28,6 +28,7 @@
 
 (define-key duta-thread-mode-map (kbd "g") 'duta-thread-refresh)
 (define-key duta-thread-mode-map (kbd "d") 'duta-thread-delete)
+(define-key duta-thread-mode-map (kbd "s") 'duta-thread-spam)
 (define-key duta-thread-mode-map (kbd "q") 'duta-thread-quit)
 
 (defface duta-thread-mode-subject-face
@@ -61,7 +62,9 @@
   (concat
    (duta-thread-render-header thread)
    "\n\n"
-   (duta-thread-render-forest (cdr (assoc 'forest thread)))))
+   (duta-thread-render-forest
+    (cdr (assoc 'forest thread))
+    (cdr (assoc 'plain_parts thread)))))
 
 (defun duta-thread-render-header (thread)
   (concat
@@ -73,7 +76,7 @@
    "\n"
    "Updated: " (propertize (cdr (assoc 'updated thread)) 'face 'duta-thread-mode-timestamp-face)))
 
-(defun duta-thread-render-forest (forest)
+(defun duta-thread-render-forest (forest parts)
   (mapconcat
    (lambda (tree)
      (let* ((message (cdr (assoc 'message tree)))
@@ -86,10 +89,22 @@
        (concat
         from_header "\n"
         "Received: " (propertize received 'face 'duta-thread-mode-timestamp-face)
-
+        "\n\n"
+        (duta-thread-render-message-parts id parts)
         )))
    forest
    "\n\n"))
+
+(defun duta-thread-render-message-parts (id parts)
+  (mapconcat
+   (lambda (part)
+     (replace-regexp-in-string "" "" (cdr (assoc 'content part))))
+   (remove-if-not
+    (lambda (part)
+      (= (cdr (assoc 'message part))
+         id))
+    parts)
+   "\n"))
 
 (defun duta-thread-buffer-name (thread-id)
   (format "*duta:thread-%d*" thread-id))
@@ -97,6 +112,14 @@
 (defun duta-thread-delete ()
   (interactive)
   (duta-get-async (format "apply-label/%d/deleted" duta-thread-mode-id))
+  (kill-buffer)
+  (when (string= (buffer-name (current-buffer))
+                 (buffer-name (get-buffer-create "*duta*")))
+    (duta-threads-refresh)))
+
+(defun duta-thread-spam ()
+  (interactive)
+  (duta-get-async (format "apply-label/%d/spam" duta-thread-mode-id))
   (kill-buffer)
   (when (string= (buffer-name (current-buffer))
                  (buffer-name (get-buffer-create "*duta*")))

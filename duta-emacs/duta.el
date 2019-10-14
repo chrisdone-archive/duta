@@ -26,6 +26,7 @@
   (unless duta-server-url (error "Need duta-server-url"))
   (unless duta-username (error "Need duta-username"))
   (unless duta-password (error "Need duta-password"))
+  (error "url-retrieve is insecure. Switch to curl.")
   (let ((url-request-method "GET")
         (url-request-extra-headers
          `(("Content-Type" . "Content-Type: application/json")
@@ -50,6 +51,7 @@
          `(("Content-Type" . "Content-Type: application/json")
            ("user" . ,duta-username)
            ("pass" . ,duta-password))))
+    (error "url-retrieve is insecure. Switch to curl.")
     (url-retrieve
      (concat duta-server-url path)
      'ignore

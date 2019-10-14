@@ -46,6 +46,7 @@
 (define-key duta-threads-mode-map (kbd "s") 'duta-threads-spam)
 (define-key duta-threads-mode-map (kbd "n") 'duta-threads-next)
 (define-key duta-threads-mode-map (kbd "p") 'duta-threads-previous)
+(define-key duta-threads-mode-map (kbd "h") 'duta-threads-previous)
 
 (defface duta-threads-mode-unread-face
   '((((class color) (min-colors 88) (background light))
@@ -92,6 +93,8 @@
     (redisplay)
     (let ((threads (duta-get duta-threads-mode-path)))
       (erase-buffer)
+      (when (= 0 (length threads))
+        (insert "No threads to display!"))
       (mapc (lambda (thread)
               (let ((start (point)))
                 (insert (duta-threads-render-thread thread))
@@ -119,7 +122,7 @@
                           'duta-threads-mode-read-face))
             (cdr (assoc 'messages thread))
             (propertize (cdr (assoc 'updated thread))
-                        'face 'duta-threads-mode-timestamp-face)))))
+                        'face 'duta-threads-mode-timestamp-face))))
 
 (defun duta-threads-thread-id ()
   (get-text-property (point) 'duta-thread-id))
@@ -148,7 +151,8 @@
      (duta-threads-begin)
      (duta-threads-end)
      (list 'face
-           'duta-threads-mode-deleted-face))))
+           'duta-threads-mode-deleted-face))
+    (duta-threads-next)))
 
 (defun duta-threads-spam ()
   (interactive)
@@ -158,7 +162,8 @@
      (duta-threads-begin)
      (duta-threads-end)
      (list 'face
-           'duta-threads-mode-deleted-face))))
+           'duta-threads-mode-deleted-face))
+    (duta-threads-next)))
 
 (defun duta-threads-next ()
   (interactive)
