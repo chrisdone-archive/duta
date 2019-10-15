@@ -19,16 +19,16 @@
 
 (defvar-local duta-server-url nil)
 (defvar-local duta-username nil)
-(defvar-local duta-password nil)
+(defvar-local duta-password-file nil)
 
 (defun duta-curl (method path)
   (unless duta-server-url (error "Need duta-server-url"))
   (unless duta-username (error "Need duta-username"))
-  (unless duta-password (error "Need duta-password"))
+  (unless duta-password-file (error "Need duta-password-file"))
   (unless (or (string= method "GET") (string= method "POST"))
     (error "method is invalid %s" method))
   (let ((user duta-username)
-        (pass duta-password)
+        (pass-file duta-password-file)
         (server-url duta-server-url))
     (with-temp-buffer
       (call-process
@@ -40,7 +40,7 @@
        "-X" method
        "-H" "Accept: application/json"
        "-H" (concat "user: " user)
-       "-H" (concat "pass: " pass)
+       "-H" (concat "@" pass-file)
        "--silent")
       (buffer-string))))
 
