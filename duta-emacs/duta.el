@@ -21,41 +21,35 @@
 (defvar-local duta-username nil)
 (defvar-local duta-password nil)
 
+(defun duta-curl (method path)
+  (unless duta-server-url (error "Need duta-server-url"))
+  (unless duta-username (error "Need duta-username"))
+  (unless duta-password (error "Need duta-password"))
+  (unless (or (string= method "GET") (string= method "POST"))
+    (error "method is invalid %s" method))
+  (let ((user duta-username)
+        (pass duta-password)
+        (server-url duta-server-url))
+    (with-temp-buffer
+      (call-process
+       "curl"
+       nil
+       t
+       nil
+       (concat server-url path)
+       "-X" method
+       "-H" "Accept: application/json"
+       "-H" (concat "user: " user)
+       "-H" (concat "pass: " pass)
+       "--silent")
+      (buffer-string))))
+
 (defun duta-get (path)
   "Make a GET request to PATH."
-  (unless duta-server-url (error "Need duta-server-url"))
-  (unless duta-username (error "Need duta-username"))
-  (unless duta-password (error "Need duta-password"))
-  (error "url-retrieve is insecure. Switch to curl.")
-  (let ((url-request-method "GET")
-        (url-request-extra-headers
-         `(("Content-Type" . "Content-Type: application/json")
-           ("user" . ,duta-username)
-           ("pass" . ,duta-password))))
-    (let ((buffer (url-retrieve-synchronously (concat duta-server-url path) t)))
-      (with-current-buffer buffer
-        (goto-char (point-min))
-        (search-forward-regexp "\r?\n\r?\n" nil nil 1)
-        (json-read-from-string
-         (decode-coding-string
-          (buffer-substring-no-properties (point) (point-max))
-          'utf-8))))))
+  (json-read-from-string (decode-coding-string (duta-curl "GET" path) 'utf-8)))
 
 (defun duta-get-async (path)
-  "Make a GET request to PATH."
-  (unless duta-server-url (error "Need duta-server-url"))
-  (unless duta-username (error "Need duta-username"))
-  (unless duta-password (error "Need duta-password"))
-  (let ((url-request-method "GET")
-        (url-request-extra-headers
-         `(("Content-Type" . "Content-Type: application/json")
-           ("user" . ,duta-username)
-           ("pass" . ,duta-password))))
-    (error "url-retrieve is insecure. Switch to curl.")
-    (url-retrieve
-     (concat duta-server-url path)
-     'ignore
-     nil
-     t)))
+  "Make a GET request to PATH, async."
+  (decode-coding-string (duta-curl "GET" path) 'utf-8))
 
 (provide 'duta)

@@ -19,7 +19,7 @@
 
 (require 'hl-line)
 
-(defvar-local duta-threads-mode-path "/"
+(defvar-local duta-threads-mode-path ""
   "Path to pull threads from.")
 
 (defun duta ()
