@@ -17,9 +17,9 @@
 
 ;;; Code:
 
-(defvar-local duta-server-url nil)
-(defvar-local duta-username nil)
-(defvar-local duta-password-file nil)
+(defvar duta-server-url nil)
+(defvar duta-username nil)
+(defvar duta-password-file nil)
 
 (defun duta-curl (method path)
   (unless duta-server-url (error "Need duta-server-url"))
