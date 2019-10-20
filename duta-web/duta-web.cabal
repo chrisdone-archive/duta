@@ -69,4 +69,5 @@ executable duta-web
                      , persistent-postgresql
                      , warp
                      , warp-tls
+                     , directory
   default-language:    Haskell2010

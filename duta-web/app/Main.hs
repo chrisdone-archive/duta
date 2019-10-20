@@ -3,6 +3,8 @@
 module Main where
 
 import Control.Applicative
+import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -18,6 +20,7 @@ import Network.Wai.Handler.Warp (defaultSettings, run)
 import Network.Wai.Handler.Warp.Internal
 import Network.Wai.Handler.WarpTLS (tlsSettingsChain, runTLS)
 import Options.Applicative.Simple
+import System.Directory
 import System.Environment
 import Yesod hiding (toHtml, Html)
 
@@ -61,9 +64,10 @@ main = do
                  strOption
                    (metavar "CERT_FILE" <> help "Certificate file" <>
                     long "cert-file") <*>
-                 some (strOption
-                    (metavar "CHAIN_FILE" <> help "Chain file" <>
-                     long "chain-file")) <*>
+                 some
+                   (strOption
+                      (metavar "CHAIN_FILE" <> help "Chain file" <>
+                       long "chain-file")) <*>
                  strOption
                    (metavar "KEY_FILE" <> help "Key file" <> long "key-file")
             in debug <|> fmap Right tlsConfig))
@@ -83,10 +87,16 @@ main = do
                 case tls of
                   Left {} -> run port application
                   Right (cert, chain, key) ->
-                    runTLS
-                      (tlsSettingsChain cert chain key)
-                      settings
-                      application)))
+                    forever
+                      (race_
+                         (threadDelay (1000 * 1000 * 5))
+                         (do exists <- doesFileExist cert
+                             if exists
+                                then runTLS
+                                       (tlsSettingsChain cert chain key)
+                                       settings
+                                       application
+                                else threadDelay (1000 * 1000 * 1))))))
 
 envToArgs :: IO b -> IO b
 envToArgs m = do
