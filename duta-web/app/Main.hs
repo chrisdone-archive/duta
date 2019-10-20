@@ -88,15 +88,13 @@ main = do
                   Left {} -> run port application
                   Right (cert, chain, key) ->
                     forever
-                      (race_
-                         (threadDelay (1000 * 1000 * 5))
-                         (do exists <- doesFileExist cert
-                             if exists
-                                then runTLS
-                                       (tlsSettingsChain cert chain key)
-                                       settings
-                                       application
-                                else threadDelay (1000 * 1000 * 1))))))
+                      (do exists <- doesFileExist cert
+                          if exists
+                             then runTLS
+                                    (tlsSettingsChain cert chain key)
+                                    settings
+                                    application
+                             else threadDelay (1000 * 1000 * 1)))))
 
 envToArgs :: IO b -> IO b
 envToArgs m = do
