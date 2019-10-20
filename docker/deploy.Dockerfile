@@ -4,9 +4,9 @@ MAINTAINER Chris Done
 ################################################################################
 # Clone down the latest repo
 
-RUN curl --silent https://github.com/chrisdone/duta/archive/979681116a662ebf2d4c1d953138fb16b5a5786a.zip -L \
+RUN curl --silent https://github.com/chrisdone/duta/archive/addccb863033c799761ef5bf9e895aa47b11f964.zip -L \
     -o duta.zip && unzip duta.zip && rm duta.zip
-WORKDIR duta-979681116a662ebf2d4c1d953138fb16b5a5786a
+WORKDIR duta-addccb863033c799761ef5bf9e895aa47b11f964
 
 ################################################################################
 # Build the local packages

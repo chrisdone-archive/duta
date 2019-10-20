@@ -79,8 +79,10 @@ envToArgs m = do
   withArgs
     (args ++
      concatMap
-       (\(k, v) -> maybe [] (\arg -> ["--" ++ map toLower arg, v]) (stripPrefix prefix k))
+       (\(k, v) -> maybe [] (\arg -> ["--" ++ map rep (map toLower arg), v]) (stripPrefix prefix k))
        env)
     m
   where
     prefix = "DUTA_SMTP_RECEIVER_"
+    rep ('_') = '-'
+    rep c = c
