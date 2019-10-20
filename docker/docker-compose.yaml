@@ -1,0 +1,19 @@
+version: "3"
+services:
+  certbot:
+    image: "certbot/certbot"
+    ports: ["80:80"]
+    restart: "no"
+    command: "certonly -n --standalone --agree-tos --email letsencrypt@chrisdone.com --domains mx.chrisdone.com"
+    volumes:
+      - certs:/etc/letsencrypt/
+  duta-web:
+    command: /opt/duta/duta-web
+    image: chrisdone/duta-deploy@sha256:0b39ec0bc01c476a90792dccf683f593d9e25c2c493da4899b67e0caa73eada4
+    ports: ["443:443"]
+    volumes:
+      - certs:/etc/letsencrypt/
+    env_file:
+     - ./duta-web-env
+volumes:
+  certs:
