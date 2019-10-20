@@ -16,7 +16,7 @@ import Duta.Web.Foundation
 import Duta.Web.Types
 import Network.Wai.Handler.Warp (defaultSettings, run)
 import Network.Wai.Handler.Warp.Internal
-import Network.Wai.Handler.WarpTLS (tlsSettings, runTLS)
+import Network.Wai.Handler.WarpTLS (tlsSettingsChain, runTLS)
 import Options.Applicative.Simple
 import System.Environment
 import Yesod hiding (toHtml, Html)
@@ -57,10 +57,13 @@ main = do
                    (Left True)
                    (long "insecure-http" <> help "Insecure HTTP mode")
                tlsConfig =
-                 (,) <$>
+                 (,,) <$>
                  strOption
                    (metavar "CERT_FILE" <> help "Certificate file" <>
                     long "cert-file") <*>
+                 some (strOption
+                    (metavar "CHAIN_FILE" <> help "Chain file" <>
+                     long "chain-file")) <*>
                  strOption
                    (metavar "KEY_FILE" <> help "Key file" <> long "key-file")
             in debug <|> fmap Right tlsConfig))
@@ -79,8 +82,11 @@ main = do
                 let settings = defaultSettings {settingsPort = port}
                 case tls of
                   Left {} -> run port application
-                  Right (cert, key) ->
-                    runTLS (tlsSettings cert key) settings application)))
+                  Right (cert, chain, key) ->
+                    runTLS
+                      (tlsSettingsChain cert chain key)
+                      settings
+                      application)))
 
 envToArgs :: IO b -> IO b
 envToArgs m = do
