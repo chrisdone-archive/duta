@@ -67,4 +67,5 @@ executable duta-web
                      , resource-pool
                      , yesod
                      , persistent-postgresql
+                     , warp
   default-language:    Haskell2010

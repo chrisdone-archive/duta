@@ -2,21 +2,22 @@
 
 module Main where
 
-import           Control.Applicative
-import           Control.Monad.IO.Class
-import           Control.Monad.Logger
-import           Control.Monad.Reader
-import           Data.Char
-import           Data.List
-import           Data.Pool
-import           Database.Persist.Postgresql as Persistent
-import           Duta.Types.Model
-import           Duta.Web ()
-import           Duta.Web.Foundation
-import           Duta.Web.Types
-import           Options.Applicative.Simple
-import           System.Environment
-import           Yesod hiding (toHtml, Html)
+import Control.Applicative
+import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Control.Monad.Reader
+import Data.Char
+import Data.List
+import Data.Pool
+import Database.Persist.Postgresql as Persistent
+import Duta.Types.Model
+import Duta.Web ()
+import Duta.Web.Foundation
+import Duta.Web.Types
+import Network.Wai.Handler.Warp (run)
+import Options.Applicative.Simple
+import System.Environment
+import Yesod hiding (toHtml, Html)
 
 --------------------------------------------------------------------------------
 -- Main entry point
@@ -59,7 +60,8 @@ main = do
           withResource
             pool
             (runReaderT (runMigration Duta.Types.Model.migrateAll))
-          liftIO (warp port (App pool root manager embeddedStatic))))
+          liftIO (do application <- toWaiApp (App pool root manager embeddedStatic)
+                     run port application)))
 
 envToArgs :: IO b -> IO b
 envToArgs m = do
