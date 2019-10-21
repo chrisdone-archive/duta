@@ -1,10 +1,10 @@
 version: "3"
 services:
   certbot:
-    image: "certbot/certbot"
+    image: chrisdone/certbot-loop@sha256:e67770ad671900d4b1f447b7771743b7c531b05046e7d7760cd538e1cf6fdb8e
     ports: ["80:80"]
     restart: "no"
-    command: "certonly -n --standalone --agree-tos --email letsencrypt@chrisdone.com --domains mx.chrisdone.com"
+    command: "--email letsencrypt@chrisdone.com --domains mx.chrisdone.com --duration 1d"
     volumes:
       - certs:/etc/letsencrypt/
   duta-web:
