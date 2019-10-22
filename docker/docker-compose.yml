@@ -1,6 +1,6 @@
 version: "3"
 services:
-  certbot:
+  certbot-loop:
     image: chrisdone/certbot-loop@sha256:e67770ad671900d4b1f447b7771743b7c531b05046e7d7760cd538e1cf6fdb8e
     ports: ["80:80"]
     restart: "no"
@@ -15,5 +15,11 @@ services:
       - certs:/etc/letsencrypt/
     env_file:
      - ./duta-web-env
+  duta-smtp-receiver:
+    command: /opt/duta/duta-smtp-receiver
+    image: chrisdone/duta-deploy@sha256:0b39ec0bc01c476a90792dccf683f593d9e25c2c493da4899b67e0caa73eada4
+    ports: ["25:25"]
+    env_file:
+     - ./duta-smtp-receiver-env
 volumes:
   certs:
