@@ -17,12 +17,14 @@ import           Duta.SMTP.Receiver
 import qualified Duta.Types.Model
 import           Options.Applicative.Simple
 import qualified Spf
+import           System.EnvArgs
 import           System.Environment
 
 main :: IO ()
 main = do
   ((host, port, connstr, connections), ()) <-
-    envToArgs
+    withEnvArgs
+      "DUTA_SMTP_RECEIVER_"
       (simpleOptions
          "0.0.0"
          "duta-smtp-receiver"
@@ -71,18 +73,3 @@ main = do
                              logDebug "Done database insert."
                        , startPool = pool
                        }))))
-
-envToArgs :: IO b -> IO b
-envToArgs m = do
-  env <- getEnvironment
-  args <- getArgs
-  withArgs
-    (args ++
-     concatMap
-       (\(k, v) -> maybe [] (\arg -> ["--" ++ map rep (map toLower arg), v]) (stripPrefix prefix k))
-       env)
-    m
-  where
-    prefix = "DUTA_SMTP_RECEIVER_"
-    rep ('_') = '-'
-    rep c = c

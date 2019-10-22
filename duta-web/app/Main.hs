@@ -21,6 +21,7 @@ import Network.Wai.Handler.Warp.Internal
 import Network.Wai.Handler.WarpTLS (tlsSettingsChain, runTLS)
 import Options.Applicative.Simple
 import System.Directory
+import System.EnvArgs
 import System.Environment
 import Yesod hiding (toHtml, Html)
 
@@ -30,7 +31,8 @@ import Yesod hiding (toHtml, Html)
 main :: IO ()
 main = do
   ((port, connstr, root, connections, user, pass, tls), ()) <-
-    envToArgs
+    withEnvArgs
+      "DUTA_WEB_"
       (simpleOptions
          "0.0.0"
          "duta-web"
@@ -90,23 +92,8 @@ main = do
                     forever
                       (do exists <- doesFileExist cert
                           if exists
-                             then runTLS
-                                    (tlsSettingsChain cert chain key)
-                                    settings
-                                    application
-                             else threadDelay (1000 * 1000 * 1)))))
-
-envToArgs :: IO b -> IO b
-envToArgs m = do
-  env <- getEnvironment
-  args <- getArgs
-  withArgs
-    (args ++
-     concatMap
-       (\(k, v) -> maybe [] (\arg -> ["--" ++ map rep (map toLower arg), v]) (stripPrefix prefix k))
-       env)
-    m
-  where
-    prefix = "DUTA_WEB_"
-    rep ('_') = '-'
-    rep c = c
+                            then runTLS
+                                   (tlsSettingsChain cert chain key)
+                                   settings
+                                   application
+                            else threadDelay (1000 * 1000 * 1)))))

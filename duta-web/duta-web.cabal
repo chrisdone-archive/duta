@@ -71,4 +71,5 @@ executable duta-web
                      , warp-tls
                      , directory
                      , async
+                     , env-args
   default-language:    Haskell2010
