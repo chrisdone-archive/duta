@@ -4,13 +4,13 @@ A mail service written in Haskell
 
 ## Components
 
-* duta-model - the library which reads/writes email to a PostgreSQL
+* [duta-model](https://github.com/chrisdone/duta/tree/master/duta-model) - the library which reads/writes email to a PostgreSQL
   database. Provides the model for all other components.
-* duta-smtp-receiver - a simple server which receives mail on SMTP
+* [duta-smtp-receiver](https://github.com/chrisdone/duta/tree/master/duta-smtp-receiver) - a simple server which receives mail on SMTP
   (port 25)
-* duta-web - a web service which provides a simple web interface and
+* [duta-web](https://github.com/chrisdone/duta/tree/master/duta-web) - a web service which provides a simple web interface and
   JSON API.
-* duta-types - shared types between the various packages.
+* [duta-types](https://github.com/chrisdone/duta/tree/master/duta-types) - shared types between the various packages.
 
 ## Deploying
 
