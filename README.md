@@ -11,6 +11,9 @@ A mail service written in Haskell
 * [duta-web](https://github.com/chrisdone/duta/tree/master/duta-web) - a web service which provides a simple web interface and
   JSON API.
 * [duta-types](https://github.com/chrisdone/duta/tree/master/duta-types) - shared types between the various packages.
+* [spf](https://github.com/chrisdone/duta/tree/master/spf) - a binding
+  to the [libspf2](https://www.libspf2.org/) C library for validating
+  SPF records. Prevents some spam.
 
 ## Deploying
 
